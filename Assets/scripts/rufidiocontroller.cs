@@ -10,7 +10,6 @@ public class rufidiocontroller : MonoBehaviour {
     public Transform groundCheck;
 
 
-    private bool grounded = false;
     private Rigidbody rb;
     // Use this for initialization
     void Awake()

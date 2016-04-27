@@ -1,5 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.SceneManagement;
+
+
 
 public class MainMenu : MonoBehaviour {
 
@@ -55,7 +58,7 @@ public class MainMenu : MonoBehaviour {
 				//Save the current Game as a new saved Game
 				SaveLoad.Save();
 				//Move on to game...
-				Application.LoadLevel(1);
+				SceneManager.LoadScene(1);
 			}
 
 			GUILayout.Space(10);
@@ -73,9 +76,9 @@ public class MainMenu : MonoBehaviour {
 			foreach(Game g in SaveLoad.savedGames) {
 				if(GUILayout.Button(g.knight.name + " - " + g.rogue.name + " - " + g.wizard.name)) {
 					Game.current = g;
-					//Move on to game...
-					Application.LoadLevel(1);
-				}
+                    //Move on to game...
+                    SceneManager.LoadScene(1);
+                }
 
 			}
 
