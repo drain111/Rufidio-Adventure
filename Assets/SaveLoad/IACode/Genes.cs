@@ -21,7 +21,11 @@ public class Genes : IComparable<Genes>
         enabled = Enabled;
         innovation = Innovation;
     }
-    
+    public Genes copyGene()
+    {
+        return new Genes(into, exit, weight, enabled, innovation);
+        
+    }
     public float getweight()
     {
         return weight;

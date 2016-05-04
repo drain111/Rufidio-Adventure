@@ -1,8 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.UI;
 
-public class MainProgram : MonoBehaviour{
+public class CopyOfMain : MonoBehaviour {
     int Population = 300;
     sightsense sightsense;
     int rightmost = 0;
@@ -11,49 +12,57 @@ public class MainProgram : MonoBehaviour{
     int timeoutconstant = 5;
     Hashtable outputs;
     string[] nameOfOutputs;
-    bool initialized = false;
+    Vector3 initialPosition;
     public Transform ending;
-
+    Transform monster;
+    public GameObject textObject;
+    bool loaded = false;
+    int lastframetotal = 0;
     // Use this for initialization
-    void Start() {
-
+    public void Start () {
+        monster = GameObject.FindGameObjectWithTag("Player").GetComponent<Transform>();
+        initialPosition = monster.position;
         outputs = new Hashtable();
         outputs.Add("Jump", false);
         outputs.Add("Left", false);
         outputs.Add("Right", false);
-        nameOfOutputs = new string[] { "Jump", "Left", "Right"};
-        initialized = false;
+        nameOfOutputs = new string[] { "Jump", "Left", "Right" };
+        Canvas thiscanvas = GameObject.FindGameObjectWithTag("Player").GetComponentInChildren<Canvas>();
 
-        //Creating Basic Genome
-        //Genome genome = newGenome();
+        //loadfile TODO
+        //Creating basic pool, if couldn't load
 
+        sightsense = GameObject.FindGameObjectWithTag("Player").GetComponent<sightsense>();
+        pool = new Pool(Population, 0, 0, 0, 0, 3, new List<Species>());
+        StartCoroutine(loadGenomes());
+        
 
-        //genome.setMaxNeuron(sightsense.i * sightsense.j + 1);
-        //genome = mutate(genome, pool);
+        
+        
+
+    }
+    private IEnumerator loadGenomes()
+    {
+        Text text = textObject.GetComponent<Text>();
+        for (int i = 0; i < Population; i++)
+        {
+            int percentage = i * 100 / 300;
+            text.text = "percentage " + percentage.ToString();
+            Genome genome = newGenome(pool);
+            pool.addToSpecies(genome);
+            yield return null;
+
+        }
+        initializeRun();
+        loaded = true;
+
 
     }
 
-    // Update is called once per frame     line 35
+    // Update is called once per frame
     void Update () {
-        if (!initialized)
-        {
-            //things seen
-            sightsense = GameObject.FindGameObjectWithTag("Player").GetComponent<sightsense>();
-            //loadfile TODO
-
-            //Creating basic pool, if couldn't load
-
-            pool = new Pool(Population, 0, 0, 0, 0, 3, new List<Species>());
-            for (int i = 0; i < Population; i++)
-            {
-                Genome genome = newGenome(pool);
-                pool.addToSpecies(genome);
-            }
-
-            initializeRun();
-            initialized = true;
-        }
-        else
+        //print(pool.getspecies().Count);
+        if (loaded)
         {
             Genome genome = pool.getspecies()[pool.getcurrentspecies()].getGenomes()[pool.getcurrentgenome()];
             if (Time.frameCount % 5 == 0)
@@ -65,10 +74,10 @@ public class MainProgram : MonoBehaviour{
                 timeout = timeoutconstant;
             }
             timeout--;
-            float timeoutBonus = Time.frameCount / 4;
-            if (timeout + timeoutBonus <= 0)
+            float timeoutBonus = (Time.frameCount - lastframetotal) / 4;
+            if (timeout + timeoutBonus <= 0 || monster.position.y < ending.position.y)
             {
-                int fitness = sightsense.getRightMost() - Time.frameCount / 4;
+                int fitness = sightsense.getRightMost() - (Time.frameCount - lastframetotal) / 4;
                 if (sightsense.getRightMost() > ending.position.x)
                 {
                     //game has ended, so give a better fitness than others
@@ -90,11 +99,11 @@ public class MainProgram : MonoBehaviour{
                 while (pool.getspecies()[pool.getcurrentspecies()].getGenomes()[pool.getcurrentgenome()].getDistanceTraveled() != 0)   //line 89
                 {
                     pool.setCurrentGenome(pool.getcurrentgenome() + 1);
-                    if (pool.getcurrentgenome() > pool.getspecies()[pool.getcurrentspecies()].getGenomes().Count)
+                    if (pool.getcurrentgenome() >= pool.getspecies()[pool.getcurrentspecies()].getGenomes().Count)
                     {
                         pool.setCurrentGenome(0);
                         pool.setCurrentSpecies(pool.getcurrentspecies() + 1);
-                        if (pool.getcurrentspecies() > pool.getspecies().Count)
+                        if (pool.getcurrentspecies() >= pool.getspecies().Count)
                         {
                             pool.newGeneration(sightsense);
                         }
@@ -114,42 +123,47 @@ public class MainProgram : MonoBehaviour{
                 foreach (Genome geno in specie.getGenomes())
                 {
                     total++;
-                    if(geno.getDistanceTraveled() != 0)
+                    if (geno.getDistanceTraveled() != 0)
                     {
                         measured++;
                     }
                 }
             }
-        }
-	}
+       }
+            
+        
+    }
+
     void initializeRun()
     {
-        //put monster at the beggining TODO
+        lastframetotal = Time.frameCount;
+        monster.position = initialPosition;
+        sightsense.setRightMost(0);
         rightmost = 0;
         pool.setCurrentFrame(0);
         timeout = timeoutconstant;
         Genome genome = pool.getspecies()[pool.getcurrentspecies()].getGenomes()[pool.getcurrentgenome()];
         genome.generateNetwork(sightsense.thingsseen.Length);
         evaluateCurrent();
-        
+
     }
     void evaluateCurrent()
     {
         Genome genome = pool.getspecies()[pool.getcurrentspecies()].getGenomes()[pool.getcurrentgenome()];
         int[,] input = sightsense.thingsseen;
-        
+
         Hashtable controller = genome.evaluateNetwork(input, nameOfOutputs);
-        if ((bool) controller["Left"] && (bool) controller["Right"]) 
+        if ((bool)controller["Left"] && (bool)controller["Right"])
         {
             controller["Left"] = false;
             controller["Right"] = true;
         }
         sightsense.movemonster(controller);
-        
+
     }
     Genome newGenome(Pool pool)
     {
-        
+
         Genome genome = new Genome(0, new List<Neuron>(), 0, 0, 0.25f, 2.0f, 0.4f, 0.5f, 0.2f, 0.4f, 0.1f, new List<Genes>());
         genome.setMaxNeuron(3);
 
@@ -157,6 +171,5 @@ public class MainProgram : MonoBehaviour{
 
         return genome;
     }
-    
-  
+
 }

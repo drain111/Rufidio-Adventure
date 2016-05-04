@@ -2,19 +2,19 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
-public class Genome {
+public class Genome : IComparable<Genome>
+{
     List<Genes> genes;
     int distancetraveled;
-    int adjusteddistancetraveled;
     List<Neuron> network;
     int maxneuron;
     int globalrank;
     Hashtable mutationrates;    
-    public Genome (int DistanceTraveled, int AdjustedDistanceTraveled,List<Neuron> Network, int MaxNeuron, int GlobalRank, float MutateConnectionsChance, float LinkMutationChance, float BiasMutationChance, float NodeMutationChance, float EnableMutationChance, float DisableMutationChance, float StepSize, List<Genes> Genes)
+    public Genome (int DistanceTraveled, List<Neuron> Network, int MaxNeuron, int GlobalRank, float MutateConnectionsChance, float LinkMutationChance, float BiasMutationChance, float NodeMutationChance, float EnableMutationChance, float DisableMutationChance, float StepSize, List<Genes> Genes)
     {
         distancetraveled = DistanceTraveled;
-        adjusteddistancetraveled = AdjustedDistanceTraveled;
         network = Network;
         maxneuron = MaxNeuron;
         globalrank = GlobalRank;
@@ -29,10 +29,33 @@ public class Genome {
         mutationrates.Add("step", StepSize);
 
     }
+    public void setRank(int Rank)
+    {
+        globalrank = Rank;
+    }
+    public int getRank()
+    {
+        return globalrank;
+    }
+    int IComparable<Genome>.CompareTo(Genome other)
+    {
+        if (distancetraveled < other.getDistanceTraveled())
+        {
+            return 1;
+        }
+        if (distancetraveled > other.getDistanceTraveled())
+        {
+            return -1;
+        }
+        return 0;
+    }
+
     public void setMutationRates(Hashtable aux)
     {
         mutationrates = aux;
     }
+
+    
     public int getDistanceTraveled()
     {
         return distancetraveled;
@@ -53,19 +76,83 @@ public class Genome {
     {
         return genes;
     }
-    public void PointMutates()
+    public void mutate( Pool pool, sightsense sightsense)
+    {
+        Hashtable aux = new Hashtable();
+
+        foreach (DictionaryEntry entry in mutationrates)
+        {
+            aux.Add(entry.Key, entry.Value);
+            if (UnityEngine.Random.Range(1, 3) == 1)
+            {
+                aux[entry.Key] = 0.95f * (float)entry.Value;
+
+            }
+
+            else
+            {
+                aux[entry.Key] = 1.05263f * (float)entry.Value;
+            }
+        }
+        mutationrates = aux;
+
+        if (UnityEngine.Random.Range(0f, 1f) < (float)mutationrates["connections"])
+        {
+            PointMutates();
+        }
+
+        for (float i = (float)mutationrates["link"]; i > 0; i--)
+        {
+            if (UnityEngine.Random.Range(0f, 1f) < i)
+            {
+                LinkMutates(false, sightsense.i * sightsense.j + 1, pool);
+            }
+        }
+
+        for (float i = (float)mutationrates["bias"]; i > 0; i--)
+        {
+            if (UnityEngine.Random.Range(0f, 1f) < i)
+            {
+                LinkMutates(false, sightsense.i * sightsense.j + 1, pool);
+            }
+        }
+        for (float i = (float)mutationrates["node"]; i > 0; i--)
+        {
+            if (UnityEngine.Random.Range(0f, 1f) < i)
+            {
+                NodeMutates(pool);
+            }
+        }
+        for (float i = (float)mutationrates["enable"]; i > 0; i--)
+        {
+            if (UnityEngine.Random.Range(0f, 1f) < i)
+            {
+                enableDisableMutates(true);
+            }
+        }
+        for (float i = (float)mutationrates["disable"]; i > 0; i--)
+        {
+            if (UnityEngine.Random.Range(0f, 1f) < i)
+            {
+                enableDisableMutates(false);
+            }
+        }
+        
+    }
+
+    void PointMutates()
     {
         float step = (float) mutationrates["step"];
         for (int i = 0; i < genes.Count; i++)
         {
             Genes gene = genes[i];
-            if (Random.Range(0, 1) < 0.9)
-                gene.setweight(gene.getweight() + Random.Range(0, 1) * step * 2 - step);
+            if (UnityEngine.Random.value < 0.9f)
+                gene.setweight(gene.getweight() + UnityEngine.Random.value * step * 2 - step);
             else
-                gene.setweight(Random.Range(0, 1) * 4 - 2);
+                gene.setweight(UnityEngine.Random.value * 4 - 2);
         }
     }
-    public void LinkMutates(bool forceBias, int inputs, Pool pool)
+    void LinkMutates(bool forceBias, int inputs, Pool pool)
     {
         int neuron1 = RandomNeurons(false, inputs);
         int neuron2 = RandomNeurons(true, inputs);
@@ -96,7 +183,7 @@ public class Genome {
         if (!containsLink(newLink))
         {
             newLink.setInnovation(pool.newInnovation());
-            newLink.setweight(Random.value * 4 - 2);
+            newLink.setweight(UnityEngine.Random.value * 4 - 2);
             genes.Add(newLink);
         }
     }
@@ -147,7 +234,7 @@ public class Genome {
             }
         }
 
-        int n = Random.Range(1, count);
+        int n = UnityEngine.Random.Range(1, count);
 
         for (int i = 0; i < neurons.Length; i++)
         {
@@ -164,12 +251,12 @@ public class Genome {
         return 0;
     }
 
-    public void NodeMutates(Pool pool)
+    void NodeMutates(Pool pool)
     {
         if (genes.Count !=0)
         {
             maxneuron++;
-            Genes gene = genes[Random.Range(0, genes.Count)];
+            Genes gene = genes[UnityEngine.Random.Range(0, genes.Count)];
             if (gene.getenabled())
             {
                 gene.setenabled(false);
@@ -191,7 +278,7 @@ public class Genome {
             }
         }
     }
-    public void enableDisableMutates(bool enabled)
+    void enableDisableMutates(bool enabled)
     {
         List<Genes> listgenes = new List<Genes>();
         for (int i = 0; i < genes.Count; i++)
@@ -203,7 +290,7 @@ public class Genome {
         }
         if (listgenes.Count != 0)
         {
-            listgenes[Random.Range(0, listgenes.Count)].setenabled(!enabled);
+            listgenes[UnityEngine.Random.Range(0, listgenes.Count)].setenabled(!enabled);
         }
     }
     public void generateNetwork(int inputs)
@@ -296,5 +383,63 @@ public class Genome {
     float sigmoid(float sum)
     {
         return 2 / (1 + Mathf.Exp(-4.9f * sum)) - 1;
+    }
+
+    public Genome crossover(Genome b, Pool pool, sightsense sightsense)
+    {
+        Genome a = this;
+        if (b.getDistanceTraveled() > a.distancetraveled)
+        {
+            Genome aux = a;
+            a = b;
+            b = aux;
+        }
+        Genome child = newGenome(pool, sightsense);
+        List<Genes> innovations = new List<Genes>();
+
+        for (int i = 0; i < b.getGenes().Count; i++)
+        {
+            innovations[b.getGenes()[i].getInnovation()] = b.getGenes()[i];
+        }
+
+        for (int i = 0; i < a.getGenes().Count; i++)
+        {
+            Genes GeneWild = a.getGenes()[i];
+            Genes GeneWilder = innovations[GeneWild.getInnovation()];
+            if (GeneWilder != null && UnityEngine.Random.Range(1, 3) == 1 && GeneWilder.getenabled())
+            {
+                child.getGenes().Add(GeneWilder.copyGene());
+            }
+            else
+            {
+                child.getGenes().Add(GeneWild.copyGene());
+            }
+
+        }
+        child.setMaxNeuron(Mathf.Max(a.maxneuron, b.maxneuron));
+        foreach (DictionaryEntry entry in a.getmutationrates())
+        {
+            child.getmutationrates()[entry.Key] = entry.Value;
+        }
+        return child;
+    }
+    Genome newGenome(Pool pool, sightsense sightsense)
+    {
+
+        Genome genome = new Genome(0, new List<Neuron>(), 0, 0, 0.25f, 2.0f, 0.4f, 0.5f, 0.2f, 0.4f, 0.1f, new List<Genes>());
+        genome.setMaxNeuron(3);
+
+        genome.mutate(pool, sightsense);
+
+        return genome;
+    }
+    public Genome copyGenome()
+    {
+        Genome aux = new Genome(0, new List<Neuron>(), maxneuron, 0,(float) mutationrates["connections"], (float)mutationrates["link"], (float)mutationrates["bias"], (float)mutationrates["node"], (float)mutationrates["enable"], (float)mutationrates["disable"], 0.1f, new List<Genes>());
+        for (int i = 0; i < genes.Count; i++)
+        {
+            aux.genes.Add(genes[i]);
+        }
+        return aux;
     }
 }

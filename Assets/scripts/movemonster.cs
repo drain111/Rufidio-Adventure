@@ -21,7 +21,7 @@ public class movemonster : MonoBehaviour {
         screenPoint = Camera.main.WorldToScreenPoint(Monster.position);
 
         offset = Monster.position - Camera.main.ScreenToWorldPoint(
-     new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenPoint.z));
+        new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenPoint.z));
 
     }
 

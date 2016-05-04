@@ -28,5 +28,6 @@ public class gotoadventuremap : MonoBehaviour {
         bf.Serialize(file, savedGame);
         file.Close();
         SceneManager.LoadScene("adventure map");
+        
     }
 }

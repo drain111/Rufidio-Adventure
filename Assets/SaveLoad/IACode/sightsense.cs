@@ -11,7 +11,7 @@ public class sightsense : MonoBehaviour {
     Rigidbody rb;
     public float maxSpeed = 5f;
     public float moveForce = 365f;
-
+    public int rightmost = 0;
 
     bool isonland = false;
     public bool jump = false;
@@ -21,7 +21,7 @@ public class sightsense : MonoBehaviour {
 
 
     // Use this for initialization
-    void Start () {
+    void Awake () {
         //get monster to move it
 
         rb = monster.GetComponent<Rigidbody>();
@@ -36,10 +36,19 @@ public class sightsense : MonoBehaviour {
 
         thingsseen = new int[j, i];
 
+
     }
-    public bool checkDistance(int rightmost)
+    public int getRightMost()
     {
-        if (monster.position.x > rightmost)
+        return rightmost;
+    }
+    public void setRightMost(int RightMost)
+    {
+        rightmost = RightMost;
+    } 
+    public bool checkDistance()
+    {
+        if ((int)Mathf.Floor(monster.position.x) > rightmost)
         {
             rightmost = (int) Mathf.Floor(monster.position.x);
             return true;
@@ -103,7 +112,7 @@ public class sightsense : MonoBehaviour {
         {
             float h = -0.5f;
             if (h * rb.velocity.x < maxSpeed)
-                rb.AddForce(Vector2.right * h * moveForce);
+                rb.AddForce(Vector2.left * h * moveForce);
 
             if (Mathf.Abs(rb.velocity.x) > maxSpeed)
                 rb.velocity = new Vector2(Mathf.Sign(rb.velocity.x) * maxSpeed, rb.velocity.y);
@@ -119,10 +128,11 @@ public class sightsense : MonoBehaviour {
         }
         if ((bool)hashTable["Jump"] == true)
         {
-            if (jump)
+            if (jump && isonland)
             {
                 rb.AddForce(new Vector2(0f, jumpForce));
                 jump = false;
+                isonland = false;
             }
         }
     }

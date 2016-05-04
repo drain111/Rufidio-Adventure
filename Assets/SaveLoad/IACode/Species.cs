@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 
 public class Species {
+    float CrossoverChance = 0.75f;
     int topfitness;
     int staleness;
     List<Genome> genomes;
@@ -22,6 +23,26 @@ public class Species {
     {
         return genomes;
     }
+    public int getTopFitness()
+    {
+        return topfitness;
+    }
+    public int getAverageFitness()
+    {
+        return averagefitness;
+    }
+    public void setTopFitness(int Fitness)
+    {
+        topfitness = Fitness;
+    }
+    public int getStaleness()
+    {
+        return staleness;
+    }
+    public void setStaleness(int Stall)
+    {
+        staleness = Stall;
+    }
     public bool aresame(Genome genome)
     {
 
@@ -35,8 +56,8 @@ public class Species {
     }
     float disjoint (List<Genes> gene1, List<Genes> genes2)
     {
-        bool[] aux1 = new bool[1000];
-        bool[] aux2 = new bool[1000];
+        bool[] aux1 = new bool[1000000];
+        bool[] aux2 = new bool[1000000];
         float n = Mathf.Max(gene1.Count, genes2.Count);
 
         for (int i = 0; i < n; i++)
@@ -93,7 +114,7 @@ public class Species {
     }
     float weights(List<Genes> gene1, List<Genes> genes2)
     {
-        Genes[] genes = new Genes[1000];
+        Genes[] genes = new Genes[1000000];
         for (int i = 0; i < genes2.Count; i++)
         {
             genes[genes2[i].getInnovation()] = genes2[i];
@@ -110,5 +131,29 @@ public class Species {
         }
         return sum / coincident;
     }
+    public void calculateAverageFitness()
+    {
+        int total = 0;
+        for (int i = 0; i < genomes.Count; i++)
+        {
+            total += genomes[i].getRank();
+        }
+        averagefitness = total / genomes.Count;
+    }
 
+    public Genome breedChild(Pool pool, sightsense sightsense)
+    {
+        Genome child;
+        if (Random.value < CrossoverChance)
+        {
+            child = genomes[Random.Range(1, genomes.Count)].crossover(genomes[Random.Range(1, genomes.Count)], pool, sightsense);
+        }
+        else
+        {
+            child = genomes[Random.Range(1, genomes.Count)].copyGenome();
+        }
+        child.mutate(pool, sightsense);
+
+        return child;
+    }
 }
