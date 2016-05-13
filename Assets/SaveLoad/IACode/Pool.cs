@@ -1,18 +1,27 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-
+using System.Xml;
+using System.Xml.Serialization;
+[XmlRoot("Pool")]
 public class Pool
 {
-    int StaleSpecies = 15;
-
-    int generation;
-    int currentspecies;
-    int currentgenome;
-    int currentframe;
-    int maxfitness;
-    int innovation;
-    List<Species> species;
+    int StaleSpecies = 10;
+    [XmlAttribute("generation")]
+    public int generation;
+    [XmlAttribute("currentspecies")]
+    public int currentspecies;
+    [XmlAttribute("currentgenome")]
+    public int currentgenome;
+    [XmlAttribute("currentframe")]
+    public int currentframe;
+    [XmlAttribute("maxfitness")]
+    public int maxfitness;
+    [XmlAttribute("innovation")]
+    public int innovation;
+    [XmlArray("species")]
+    [XmlArrayItem("specie")]
+    public List<Species> species;
     public Pool(int Generation, int CurrentSpecies, int CurrentGenome, int CurrentFrame, int MaxFitness, int Innovation, List<Species> Species)
     {
         generation = Generation;
@@ -23,6 +32,16 @@ public class Pool
         innovation = Innovation;
         species = Species;
 
+    }
+    public Pool() : base()
+    {
+        generation = 0;
+        currentspecies = 0;
+        currentgenome = 0;
+        currentframe = 0;
+        maxfitness = 0;
+        innovation = 0;
+        species = new List<Species>();
     }
     public void newGeneration(sightsense sightsense)
     {
@@ -40,7 +59,7 @@ public class Pool
         List <Genome> children = new List<Genome>();
         for (int i = 0; i < species.Count; i++)
         {
-            int breed = (int)Mathf.Floor(species[i].getAverageFitness() / sum * 300) - 1;
+            int breed = (int)Mathf.Floor((float) species[i].getAverageFitness() / (float) sum * 300.0f) - 1;
             for (int j = 0; j < breed; j++)
             {
                 children.Add(species[i].breedChild(this,sightsense));
@@ -73,7 +92,7 @@ public class Pool
         {
             Species specie = species[i];
             //300 population
-            int breed = (int) Mathf.Floor(specie.getAverageFitness() / sum * 300);
+            int breed = (int) Mathf.Floor((float) specie.getAverageFitness() / (float) sum * 300.0f);
             if (breed >= 1)
             {
                 survived.Add(specie);
@@ -98,11 +117,14 @@ public class Pool
             Species specie = species[i];
             //Note debug to prove that a > b, max to min
             specie.getGenomes().Sort();
-            specie.getGenomes().Reverse();
             if (specie.getGenomes()[0].getDistanceTraveled() > specie.getTopFitness())
             {
                 specie.setTopFitness(specie.getGenomes()[0].getDistanceTraveled());
                 specie.setStaleness(0);
+            }
+            else
+            {
+                specie.setStaleness(specie.getStaleness() + 1);
             }
             if( specie.getStaleness() < StaleSpecies || specie.getTopFitness() >= maxfitness) {
                 survived.Add(specie);
@@ -124,6 +146,8 @@ public class Pool
             }
         }
         aux.Sort();
+        aux.Reverse();
+
         for (int i = 0; i < aux.Count; i++)
         {
             aux[i].setRank(i);
@@ -135,16 +159,19 @@ public class Pool
         {
             Species aux = species[i];
             aux.getGenomes().Sort();
-            aux.getGenomes().Reverse();
 
-            int remaining = (int) Mathf.Ceil(aux.getGenomes().Count / 2);
+            float remaining =  Mathf.Ceil(aux.getGenomes().Count / 2.0f);
 
             if (sentence)
             {
                 remaining = 1;
             }
-            
-            aux.getGenomes().RemoveRange(remaining, aux.getGenomes().Count - remaining);
+
+            while (remaining < aux.getGenomes().Count)
+            {
+                aux.getGenomes().RemoveAt(aux.getGenomes().Count - 1);
+
+            }
             
         }
     }
@@ -172,9 +199,13 @@ public class Pool
     {
         currentframe = frame;
     }
-    public List<Species> getspecies()
+    public List<Species> getSpecies()
     {
         return species;
+    }
+    public void setSpecies(List<Species> specie)
+    {
+        species = specie;
     }
     public int getcurrentspecies()
     {
@@ -184,7 +215,22 @@ public class Pool
     {
         return currentgenome;
     }
-   
+    public int getGeneration()
+    {
+        return generation;
+    }
+    public void setGeneration(int Gen)
+    {
+        generation = Gen;
+    }
+    public int getInnovation()
+    {
+        return innovation;
+    }
+    public void setInnovation(int newthing)
+    {
+        innovation = newthing;
+    }
     public void addToSpecies(Genome genome)
     {
         //first see if we can qualify this genome into an specie

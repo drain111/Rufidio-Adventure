@@ -1,16 +1,22 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System;
-
+using System.Xml;
+using System.Xml.Serialization;
+[XmlRoot("Genes")]
 
 public class Genes : IComparable<Genes>
 {
-
-    int into;
-    int exit;
-    float weight;
-    bool enabled;
-    int innovation;
+    [XmlAttribute("into")]
+    public int into;
+    [XmlAttribute("exit")]
+    public int exit;
+    [XmlAttribute("weight")]
+    public float weight;
+    [XmlAttribute("enabled")]
+    public bool enabled;
+    [XmlAttribute("geneinnovation")]
+    public int innovation;
     
 
     public Genes(int Into, int Exit, float Weight, bool Enabled, int Innovation)
@@ -20,6 +26,10 @@ public class Genes : IComparable<Genes>
         weight = Weight;
         enabled = Enabled;
         innovation = Innovation;
+    }
+    public Genes() : base()
+    {
+
     }
     public Genes copyGene()
     {

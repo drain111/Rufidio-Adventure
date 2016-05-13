@@ -3,14 +3,28 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System;
+using System.Xml;
+using System.Xml.Serialization;
+[XmlRoot("Genome")]
 
 public class Genome : IComparable<Genome>
 {
-    List<Genes> genes;
-    int distancetraveled;
+    [XmlArray("genomegenes")]
+    [XmlArrayItem("genomegene")]
+    public List<Genes> genes;
+    [XmlAttribute("distancetraveled")]
+    public int distancetraveled;
     List<Neuron> network;
-    int maxneuron;
-    int globalrank;
+    [XmlAttribute("maxneuron")]
+    public int maxneuron;
+    [XmlAttribute("globalrank")]
+    public int globalrank;
+    [XmlArray("mutationKeys")]
+    [XmlArrayItem("Keys")]
+    public List<string> mutationKeys;
+    [XmlArray("mutationNumbers")]
+    [XmlArrayItem("Numbers")]
+    public List<float> mutationNumbers;
     Hashtable mutationrates;    
     public Genome (int DistanceTraveled, List<Neuron> Network, int MaxNeuron, int GlobalRank, float MutateConnectionsChance, float LinkMutationChance, float BiasMutationChance, float NodeMutationChance, float EnableMutationChance, float DisableMutationChance, float StepSize, List<Genes> Genes)
     {
@@ -20,6 +34,23 @@ public class Genome : IComparable<Genome>
         globalrank = GlobalRank;
         genes = Genes;
         mutationrates = new Hashtable();
+        mutationKeys = new List<string>();
+        mutationKeys.Add("connections");
+        mutationKeys.Add("link");
+        mutationKeys.Add("bias");
+        mutationKeys.Add("node");
+        mutationKeys.Add("enable");
+        mutationKeys.Add("disable");
+        mutationKeys.Add("step");
+        mutationNumbers = new List<float>();
+        mutationNumbers.Add(MutateConnectionsChance);
+        mutationNumbers.Add(LinkMutationChance);
+        mutationNumbers.Add(BiasMutationChance);
+        mutationNumbers.Add(NodeMutationChance);
+        mutationNumbers.Add(EnableMutationChance);
+        mutationNumbers.Add(DisableMutationChance);
+        mutationNumbers.Add(StepSize);
+
         mutationrates.Add("connections", MutateConnectionsChance);
         mutationrates.Add("link", LinkMutationChance);
         mutationrates.Add("bias", BiasMutationChance);
@@ -29,6 +60,26 @@ public class Genome : IComparable<Genome>
         mutationrates.Add("step", StepSize);
 
     }
+    public Genome() : base()
+    {
+        network = new List<Neuron>();
+        genes = new List<Genes>();
+    }
+    public void setMutations()
+    {
+        mutationKeys = mutationrates.Keys.Cast<string>().ToList();
+        mutationNumbers = mutationrates.Values.Cast<float>().ToList();
+    }
+    public void recreateMutations()
+    {
+        mutationrates = new Hashtable();
+
+        for (int i = 0; i < mutationKeys.Count; i++)
+        {
+            mutationrates.Add(mutationKeys[i], mutationNumbers[i]);
+        }
+    }
+    
     public void setRank(int Rank)
     {
         globalrank = Rank;
@@ -53,6 +104,8 @@ public class Genome : IComparable<Genome>
     public void setMutationRates(Hashtable aux)
     {
         mutationrates = aux;
+        mutationKeys = mutationrates.Keys.Cast<string>().ToList();
+        mutationNumbers = mutationrates.Values.Cast<float>().ToList();
     }
 
     
@@ -95,7 +148,7 @@ public class Genome : IComparable<Genome>
             }
         }
         mutationrates = aux;
-
+        setMutations();
         if (UnityEngine.Random.Range(0f, 1f) < (float)mutationrates["connections"])
         {
             PointMutates();
@@ -113,7 +166,7 @@ public class Genome : IComparable<Genome>
         {
             if (UnityEngine.Random.Range(0f, 1f) < i)
             {
-                LinkMutates(false, sightsense.i * sightsense.j + 1, pool);
+                LinkMutates(true, sightsense.i * sightsense.j + 1, pool);
             }
         }
         for (float i = (float)mutationrates["node"]; i > 0; i--)
@@ -209,16 +262,17 @@ public class Genome : IComparable<Genome>
             {
                 neurons[i] = true;
             }
-            for (int i = 0; i < genes.Count; i++)
+            
+        }
+        for (int i = 0; i < genes.Count; i++)
+        {
+            if (!sentence || genes[i].getInto() > inputs)
             {
-                if (genes[i].getInto() > inputs)
-                {
-                    neurons[genes[i].getInto()] = true;
-                }
-                if (genes[i].getOut() > inputs)
-                {
-                    neurons[genes[i].getOut()] = true;
-                }
+                neurons[genes[i].getInto()] = true;
+            }
+            if (!sentence || genes[i].getOut() > inputs)
+            {
+                neurons[genes[i].getOut()] = true;
             }
         }
         for (int i = 0; i < 3; i++)
@@ -234,7 +288,7 @@ public class Genome : IComparable<Genome>
             }
         }
 
-        int n = UnityEngine.Random.Range(1, count);
+        int n = UnityEngine.Random.Range(1, count+1);
 
         for (int i = 0; i < neurons.Length; i++)
         {
@@ -290,50 +344,56 @@ public class Genome : IComparable<Genome>
         }
         if (listgenes.Count != 0)
         {
-            listgenes[UnityEngine.Random.Range(0, listgenes.Count)].setenabled(!enabled);
+            Genes aux = listgenes[UnityEngine.Random.Range(0, listgenes.Count)];
+            aux.setenabled(!aux.getenabled());
         }
     }
     public void generateNetwork(int inputs)
     {
-
-        //3 is always the number of inputs for the moment, left, right and jump 
+        List<Neuron> Net = new List<Neuron>();
+        //3 is always the number of Outputs for the moment, left, right and jump 
         for (int i = 0; i < inputs; i++)
         {
-            network.Add(new Neuron(new List<Genes>(), 0.0f));
+            Net.Add(new Neuron(new List<Genes>(), 0.0f));
         }
         Neuron empty = null;
-        network.AddRange(Enumerable.Repeat(empty, 1000000- network.Count));
+        Net.AddRange(Enumerable.Repeat(empty, 1000000- Net.Count));
         for (int i = 0; i < 3; i++)
         {
             //max number of possible nodes
-            network.Add(new Neuron(new List<Genes>(), 0.0f));
+            Net.Add(new Neuron(new List<Genes>(), 0.0f));
         }
         genes.Sort();
+        genes.Reverse();
+
         for (int i = 0; i < genes.Count; i++)
         {
             if (genes[i].getenabled())
             {
-                if (network[genes[i].getOut()] == null)
+                if (Net[genes[i].getOut()] == null)
                 {
-                    network[genes[i].getOut()] = new Neuron(new List<Genes>(), 0.0f);
+                    Net[genes[i].getOut()] = new Neuron(new List<Genes>(), 0.0f);
 
                 }
-                network[genes[i].getOut()].addIncomingGene(genes[i]);
-                if (network[genes[i].getInto()] == null)
+                Net[genes[i].getOut()].addIncomingGene(genes[i]);
+                if (Net[genes[i].getInto()] == null)
                 {
-                    network[genes[i].getInto()] = new Neuron(new List<Genes>(), 0.0f);
+                    Net[genes[i].getInto()] = new Neuron(new List<Genes>(), 0.0f);
 
                 }
             }
         }
+
+        network = Net;
+        
     }
 
     public Hashtable evaluateNetwork(int[,] inputs, string[] numberOfOutputs)
     {
         int count = 0;
-        for (int i = 0; i < inputs.Rank; i++)
+        for (int i = 0; i < inputs.GetLength(0); i++)
         {
-            for (int j = 0; j < inputs.GetLength(i); j++)
+            for (int j = 0; j < inputs.GetLength(1); j++)
             {
                 if (network[i+count] != null)
                 {
@@ -353,7 +413,7 @@ public class Genome : IComparable<Genome>
                 for (int i = 0; i < neuron.getInto().Count; i++)
                 {
                     Neuron aux = network[neuron.getInto()[i].getInto()];
-                    sum += neuron.getInto()[i].getweight() + aux.getValue();
+                    sum += neuron.getInto()[i].getweight() * aux.getValue();
                 }
                 if (neuron.getInto().Count > 0)
                 {
@@ -368,7 +428,8 @@ public class Genome : IComparable<Genome>
         {
             string button = numberOfOutputs[i];
             //100000 it's max number of neurons
-            if (network[1000000 + i].getValue() > 0)
+            Neuron neuron = network[1000000 + i];
+            if (neuron.getValue() > 0)
             {
                 outputs.Add(button, true);
             }
@@ -382,7 +443,7 @@ public class Genome : IComparable<Genome>
 
     float sigmoid(float sum)
     {
-        return 2 / (1 + Mathf.Exp(-4.9f * sum)) - 1;
+        return 2.0f / (1.0f + Mathf.Exp(-4.9f * sum)) - 1.0f;
     }
 
     public Genome crossover(Genome b, Pool pool, sightsense sightsense)
@@ -393,22 +454,47 @@ public class Genome : IComparable<Genome>
             Genome aux = a;
             a = b;
             b = aux;
+           
         }
         Genome child = newGenome(pool, sightsense);
         List<Genes> innovations = new List<Genes>();
 
+        Genes auxgene = null;
         for (int i = 0; i < b.getGenes().Count; i++)
         {
-            innovations[b.getGenes()[i].getInnovation()] = b.getGenes()[i];
+            if (innovations.Count <= b.getGenes()[i].getInnovation())
+            {
+                for (int j = 0; j < b.getGenes()[i].getInnovation(); j++)
+                {
+                    innovations.Add(auxgene);
+                }
+                innovations.Add(b.getGenes()[i]);
+            }
+            else
+            {
+                innovations[b.getGenes()[i].getInnovation()] = b.getGenes()[i];
+
+            }
         }
 
         for (int i = 0; i < a.getGenes().Count; i++)
         {
             Genes GeneWild = a.getGenes()[i];
-            Genes GeneWilder = innovations[GeneWild.getInnovation()];
-            if (GeneWilder != null && UnityEngine.Random.Range(1, 3) == 1 && GeneWilder.getenabled())
+
+            if (GeneWild.getInnovation() < innovations.Count)
             {
-                child.getGenes().Add(GeneWilder.copyGene());
+                Genes GeneWilder = innovations[GeneWild.getInnovation()];
+                if (GeneWilder != null && UnityEngine.Random.Range(1, 3) == 1 && GeneWilder.getenabled())
+                {
+                    child.getGenes().Add(GeneWilder.copyGene());
+
+                }
+                else
+                {
+                    child.getGenes().Add(GeneWild.copyGene());
+
+                }
+            
             }
             else
             {
@@ -427,7 +513,7 @@ public class Genome : IComparable<Genome>
     {
 
         Genome genome = new Genome(0, new List<Neuron>(), 0, 0, 0.25f, 2.0f, 0.4f, 0.5f, 0.2f, 0.4f, 0.1f, new List<Genes>());
-        genome.setMaxNeuron(3);
+        genome.setMaxNeuron(sightsense.thingsseen.GetLength(0) * sightsense.thingsseen.GetLength(0));
 
         genome.mutate(pool, sightsense);
 

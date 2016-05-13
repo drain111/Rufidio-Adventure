@@ -2,15 +2,20 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public class Neuron  {
 
-    List<Genes> into;
-    float value;
+public class Neuron  {
+   
+    public List<Genes> into;
+    public float value;
 
     public Neuron(List<Genes> Into, float Value)
     {
         into = Into;
         value = Value;
+    }
+    public Neuron() : base()
+    {
+
     }
     public void addIncomingGene(Genes geneComing)
     {

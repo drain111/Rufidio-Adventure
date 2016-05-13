@@ -1,14 +1,21 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-
+using System.Xml;
+using System.Xml.Serialization;
+[XmlRoot("Species")]
 
 public class Species {
     float CrossoverChance = 0.75f;
-    int topfitness;
-    int staleness;
-    List<Genome> genomes;
-    int averagefitness;
+    [XmlAttribute("topfitness")]
+    public int topfitness;
+    [XmlAttribute("staleness")]
+    public int staleness;
+    [XmlArray("genomes")]
+    [XmlArrayItem("genome")]
+    public List<Genome> genomes;
+    [XmlAttribute("averagefitness")]
+    public int averagefitness;
     float DeltaDisjoint = 2.0f;
     float DeltaWeights = 0.4f;
     float DeltaThreshold = 1.0f;
@@ -18,6 +25,10 @@ public class Species {
         staleness = Staleness;
         genomes = Genome;
         averagefitness = AverageFitness;
+    }
+    public Species() : base()
+    {
+
     }
     public List<Genome> getGenomes()
     {
@@ -123,13 +134,14 @@ public class Species {
         int coincident = 1;
         for (int i = 0; i < gene1.Count; i++)
         {
-            if (genes[gene1[i].getInnovation()] != null)
+            Genes aux = genes[gene1[i].getInnovation()];
+            if (aux != null)
             {
-                sum += (int) Mathf.Abs(gene1[i].getweight() - genes[gene1[i].getInnovation()].getweight());
+                sum += (int) Mathf.Abs((float) gene1[i].getweight() - (float) aux.getweight());
                 coincident++;
             }
         }
-        return sum / coincident;
+        return (float) sum / (float) coincident;
     }
     public void calculateAverageFitness()
     {
@@ -146,11 +158,11 @@ public class Species {
         Genome child;
         if (Random.value < CrossoverChance)
         {
-            child = genomes[Random.Range(1, genomes.Count)].crossover(genomes[Random.Range(1, genomes.Count)], pool, sightsense);
+            child = genomes[Random.Range(0, genomes.Count)].crossover(genomes[Random.Range(0, genomes.Count)], pool, sightsense);
         }
         else
         {
-            child = genomes[Random.Range(1, genomes.Count)].copyGenome();
+            child = genomes[Random.Range(0, genomes.Count)].copyGenome();
         }
         child.mutate(pool, sightsense);
 

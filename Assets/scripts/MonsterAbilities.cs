@@ -9,9 +9,8 @@ public class MonsterAbilities : MonoBehaviour {
     public int learningjump = 0;
     public bool jumplearned = false;
     public Text jumptext;
-
+    public int money = 0;
     monsterdata monsterdata;
-
 
 	// Use this for initialization
 	void Start () {
@@ -25,7 +24,9 @@ public class MonsterAbilities : MonoBehaviour {
             file.Close();
             jumplearned = monsterdata.jumplearned;
             learningjump = monsterdata.learningjump;
-            jumptext.text = "Jump learned : " + learningjump + " of 100";
+            money = monsterdata.money;
+            jumptext.text = "Jump learned : " + learningjump + " of 100\nMoney earned: " + money;
+
         }
 
 
@@ -41,7 +42,7 @@ public class MonsterAbilities : MonoBehaviour {
         {
             learningjump++;
             
-            jumptext.text = "Jump learned : " + learningjump + " of 100";
+            jumptext.text = "Jump learned : " + learningjump + " of 100\nMoney earned: " + money;
             if (learningjump == 100)
             {
                 jumplearned = true;
@@ -51,5 +52,6 @@ public class MonsterAbilities : MonoBehaviour {
 
         monsterdata.current.jumplearned = jumplearned;
         monsterdata.current.learningjump = learningjump;
+        monsterdata.current.money = money;
     }
 }

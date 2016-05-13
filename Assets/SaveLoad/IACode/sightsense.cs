@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.UI;
 
 public class sightsense : MonoBehaviour {
     public GameObject sight;
@@ -12,13 +13,16 @@ public class sightsense : MonoBehaviour {
     public float maxSpeed = 5f;
     public float moveForce = 365f;
     public int rightmost = 0;
-
+    public int money = 0;
     bool isonland = false;
     public bool jump = false;
     public float jumpForce = 1000f;
     public Transform groundCheck;
-
-
+    float actualsizex;
+    float actualsizey;
+    float cornerx;
+    float cornery;
+    public Text moneytext;
 
     // Use this for initialization
     void Awake () {
@@ -35,6 +39,10 @@ public class sightsense : MonoBehaviour {
         j = (int)Mathf.Ceil(actualsize.y / monsteractualsize.y);
 
         thingsseen = new int[j, i];
+        cornerx = sight.GetComponent<Collider>().bounds.center.x + sight.GetComponent<Collider>().bounds.extents.x;
+        cornery = sight.GetComponent<Collider>().bounds.center.y + sight.GetComponent<Collider>().bounds.extents.y;
+        actualsizex = monsteractualsize.x;
+        actualsizey = monsteractualsize.y;
 
 
     }
@@ -55,21 +63,25 @@ public class sightsense : MonoBehaviour {
         }
         return false;
     }
+    public void changeMoneyText()
+    {
+        moneytext.text = "Money earned: " + money;
+
+    }
     // Update is called once per frame
     void Update () {
         Bounds monstersize = sphere.GetComponent<MeshFilter>().sharedMesh.bounds;
         Vector3 monsteractualsize = Matrix4x4.Scale(sphere.GetComponent<Transform>().localScale) * monstersize.size;
-        Vector3 corner = new Vector3(sight.GetComponent<Collider>().bounds.center.x + sight.GetComponent<Collider>().bounds.extents.x,
-                         sight.GetComponent<Collider>().bounds.center.y + sight.GetComponent<Collider>().bounds.extents.y,
-                         sight.GetComponent<Collider>().bounds.center.z);
+       
         for (int l = 0; l < j; l++)
         {
             for (int m = 0; m < i; m++)
             {
-                
+                //- monsteractualsize.x / 2 
+                //- monsteractualsize.y / 2 
                 RaycastHit hit;
-                Debug.DrawRay(monster.position, new Vector3(corner.x - monsteractualsize.x / 2 - monsteractualsize.x * m, corner.y - monsteractualsize.y / 2 - monsteractualsize.y * l, 0), Color.red);
-                if (Physics.Raycast(monster.position, new Vector3(corner.x - monsteractualsize.x / 2 - monsteractualsize.x * m, corner.y - monsteractualsize.y / 2 - monsteractualsize.y * l, 0), out hit))
+                Debug.DrawRay(monster.position, new Vector3(cornerx / 2 + actualsizex * m, cornery - actualsizey * l, 0), Color.red);
+                if (Physics.Raycast(monster.position, new Vector3(cornerx / 2 + actualsizex * m, cornery - actualsizey * l, 0), out hit))
                 {
 
 
@@ -103,14 +115,24 @@ public class sightsense : MonoBehaviour {
     void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.layer == 8) isonland = true;
-        else isonland = false;
+     
+    }
+    void OnTriggerEnter(Collider collision)
+    {
+        if (collision.gameObject.layer == 9)
+        {
+            money++;
+            monsterdata.current.money = money;
+            Destroy(collision.gameObject);
+            moneytext.text = "Money earned: " + money;
+        }
     }
     public void movemonster(Hashtable hashTable)
     {
         
         if ((bool) hashTable["Left"] == true)
         {
-            float h = -0.5f;
+            float h = -1f;
             if (h * rb.velocity.x < maxSpeed)
                 rb.AddForce(Vector2.left * h * moveForce);
 
@@ -119,9 +141,9 @@ public class sightsense : MonoBehaviour {
         }
         else if ((bool)hashTable["Right"] == true)
         {
-            float h = 0.5f;
+            float h = 1f;
             if (h * rb.velocity.x < maxSpeed)
-                rb.AddForce(Vector2.right * h * moveForce);
+                rb.AddForce(Vector2.left * h * moveForce);
 
             if (Mathf.Abs(rb.velocity.x) > maxSpeed)
                 rb.velocity = new Vector2(Mathf.Sign(rb.velocity.x) * maxSpeed, rb.velocity.y);

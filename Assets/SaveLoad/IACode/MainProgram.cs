@@ -55,7 +55,7 @@ public class MainProgram : MonoBehaviour{
         }
         else
         {
-            Genome genome = pool.getspecies()[pool.getcurrentspecies()].getGenomes()[pool.getcurrentgenome()];
+            Genome genome = pool.getSpecies()[pool.getcurrentspecies()].getGenomes()[pool.getcurrentgenome()];
             if (Time.frameCount % 5 == 0)
             {
                 evaluateCurrent();
@@ -87,14 +87,14 @@ public class MainProgram : MonoBehaviour{
                 }
                 pool.setCurrentGenome(0);
                 pool.setCurrentSpecies(0);
-                while (pool.getspecies()[pool.getcurrentspecies()].getGenomes()[pool.getcurrentgenome()].getDistanceTraveled() != 0)   //line 89
+                while (pool.getSpecies()[pool.getcurrentspecies()].getGenomes()[pool.getcurrentgenome()].getDistanceTraveled() != 0)   
                 {
                     pool.setCurrentGenome(pool.getcurrentgenome() + 1);
-                    if (pool.getcurrentgenome() > pool.getspecies()[pool.getcurrentspecies()].getGenomes().Count)
+                    if (pool.getcurrentgenome() > pool.getSpecies()[pool.getcurrentspecies()].getGenomes().Count)
                     {
                         pool.setCurrentGenome(0);
                         pool.setCurrentSpecies(pool.getcurrentspecies() + 1);
-                        if (pool.getcurrentspecies() > pool.getspecies().Count)
+                        if (pool.getcurrentspecies() > pool.getSpecies().Count)
                         {
                             pool.newGeneration(sightsense);
                         }
@@ -109,7 +109,7 @@ public class MainProgram : MonoBehaviour{
             }
             int measured = 0;
             int total = 0;
-            foreach (Species specie in pool.getspecies())
+            foreach (Species specie in pool.getSpecies())
             {
                 foreach (Genome geno in specie.getGenomes())
                 {
@@ -128,14 +128,14 @@ public class MainProgram : MonoBehaviour{
         rightmost = 0;
         pool.setCurrentFrame(0);
         timeout = timeoutconstant;
-        Genome genome = pool.getspecies()[pool.getcurrentspecies()].getGenomes()[pool.getcurrentgenome()];
+        Genome genome = pool.getSpecies()[pool.getcurrentspecies()].getGenomes()[pool.getcurrentgenome()];
         genome.generateNetwork(sightsense.thingsseen.Length);
         evaluateCurrent();
         
     }
     void evaluateCurrent()
     {
-        Genome genome = pool.getspecies()[pool.getcurrentspecies()].getGenomes()[pool.getcurrentgenome()];
+        Genome genome = pool.getSpecies()[pool.getcurrentspecies()].getGenomes()[pool.getcurrentgenome()];
         int[,] input = sightsense.thingsseen;
         
         Hashtable controller = genome.evaluateNetwork(input, nameOfOutputs);
