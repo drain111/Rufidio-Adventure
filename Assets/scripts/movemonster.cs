@@ -2,15 +2,23 @@
 using System.Collections;
 
 public class movemonster : MonoBehaviour {
-    public Transform Monster;
+    public GameObject Monsterobject;
+    Transform Monster;
+    Rigidbody rig;
 
 	// Use this for initialization
 	void Start () {
-	}
-	
-	// Update is called once per frame
-	void Update () {
+        Monster = Monsterobject.GetComponent<Transform>();
+        rig = Monsterobject.GetComponent<Rigidbody>();
 
+    }
+
+    // Update is called once per frame
+    void Update () {
+        if (rig.IsSleeping())
+        {
+            rig.WakeUp();
+        }
        
 	}
     private Vector3 screenPoint;
@@ -18,6 +26,7 @@ public class movemonster : MonoBehaviour {
 
     void OnMouseDown()
     {
+        
         screenPoint = Camera.main.WorldToScreenPoint(Monster.position);
 
         offset = Monster.position - Camera.main.ScreenToWorldPoint(

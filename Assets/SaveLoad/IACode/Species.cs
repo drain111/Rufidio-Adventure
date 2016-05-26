@@ -164,7 +164,7 @@ public class Species {
         {
             child = genomes[Random.Range(0, genomes.Count)].copyGenome();
         }
-        child.mutate(pool, sightsense);
+        child.mutate(pool, sightsense.thingsseen);
 
         return child;
     }

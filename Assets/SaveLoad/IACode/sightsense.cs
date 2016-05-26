@@ -22,7 +22,11 @@ public class sightsense : MonoBehaviour {
     float actualsizey;
     float cornerx;
     float cornery;
+    public int sleep = 100;
+    public int hungry = 100;
     public Text moneytext;
+    public int coinlevel = 0;
+
 
     // Use this for initialization
     void Awake () {
@@ -69,7 +73,7 @@ public class sightsense : MonoBehaviour {
 
     }
     // Update is called once per frame
-    void Update () {
+    void FixedUpdate () {
         Bounds monstersize = sphere.GetComponent<MeshFilter>().sharedMesh.bounds;
         Vector3 monsteractualsize = Matrix4x4.Scale(sphere.GetComponent<Transform>().localScale) * monstersize.size;
        
@@ -100,16 +104,19 @@ public class sightsense : MonoBehaviour {
             }
         }
 
-
-
-
-
-        ////////////////////Movement
-
-        if (isonland)
+        if (Time.time % 12 == 0 && sleep > 0)
         {
-            jump = true;
+            sleep--;
         }
+        if (Time.time % 4 == 0 && hungry > 0)
+        {
+            hungry--;
+        }
+
+        moneytext.text = "Money earned: " + money + "\nAwake: " + sleep + "\nHungry: " + hungry;
+
+
+
 
     }
     void OnCollisionEnter(Collision collision)
@@ -117,14 +124,27 @@ public class sightsense : MonoBehaviour {
         if (collision.gameObject.layer == 8) isonland = true;
      
     }
+
+    void OnCollisionExit(Collision collision)
+    {
+        if (collision.gameObject.layer == 8) isonland = false;
+
+    }
     void OnTriggerEnter(Collider collision)
     {
         if (collision.gameObject.layer == 9)
+
         {
-            money++;
+            
+            money = money + (int) Mathf.Pow(2, coinlevel);
+                   
+            
+
+
+
             monsterdata.current.money = money;
             Destroy(collision.gameObject);
-            moneytext.text = "Money earned: " + money;
+            moneytext.text = "Money earned: " + money + "\nAwake: " + sleep + "\nHungry: " + hungry;
         }
     }
     public void movemonster(Hashtable hashTable)
@@ -150,10 +170,9 @@ public class sightsense : MonoBehaviour {
         }
         if ((bool)hashTable["Jump"] == true)
         {
-            if (jump && isonland)
+            if (isonland)
             {
                 rb.AddForce(new Vector2(0f, jumpForce));
-                jump = false;
                 isonland = false;
             }
         }

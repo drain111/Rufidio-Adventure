@@ -9,12 +9,12 @@ using System.Xml.Serialization;
 using UnityEngine.SceneManagement;
 
 public class CopyOfMain : MonoBehaviour {
-    int Population = 300;
+    int Population = 200;
     sightsense sightsense;
     int rightmost = 0;
     Pool pool;
     int timeout = 0;
-    int timeoutconstant = 10;
+    int timeoutconstant = 5;
     Hashtable outputs;
     string[] nameOfOutputs;
     Vector3 initialPosition;
@@ -22,13 +22,20 @@ public class CopyOfMain : MonoBehaviour {
     Transform monster;
     public GameObject textObject;
     public GameObject imageObject;
-
+    int bedcost;
+    int foodcost;
+    int foodlevel;
+    int bedlevel;
     bool loaded = false;
     int lastframetotal = 0;
     int whentosave = 0;
     monsterdata savedGame;
     bool jumplearned;
     int percentagelearnt;
+    bool dontsave = false;
+    bool[] feelingsarray;
+    int moneycost;
+    int totalfalsenumbers = 0;
     // Use this for initialization
     public void Start () {
         monster = GameObject.FindGameObjectWithTag("Player").GetComponent<Transform>();
@@ -39,6 +46,7 @@ public class CopyOfMain : MonoBehaviour {
         outputs.Add("Right", false);
         nameOfOutputs = new string[] { "Jump", "Left", "Right" };
         Canvas thiscanvas = GameObject.FindGameObjectWithTag("Player").GetComponentInChildren<Canvas>();
+        feelingsarray = new bool[100];
         
         sightsense = GameObject.FindGameObjectWithTag("Player").GetComponent<sightsense>();
         sightsense.setRightMost((int) monster.position.x);
@@ -53,7 +61,20 @@ public class CopyOfMain : MonoBehaviour {
             jumplearned = savedGame.jumplearned;
             sightsense.money = savedGame.money;
             percentagelearnt = savedGame.learningjump;
+            sightsense.hungry = savedGame.hungry;
+            sightsense.sleep = savedGame.sleep;
             sightsense.changeMoneyText();
+            bedlevel = savedGame.bedlevel;
+            foodlevel = savedGame.foodlevel;
+            bedcost = savedGame.bedprice;
+            foodcost = savedGame.foodprice;
+            moneycost = savedGame.moneycost;
+            sightsense.coinlevel = savedGame.coinlevel;
+        }
+      
+        for (int i = 0; i < 100; i++)
+        {
+            feelingsarray[i] = true;
         }
         //loadfile TODO
         //Creating basic pool, if couldn't load
@@ -87,14 +108,14 @@ public class CopyOfMain : MonoBehaviour {
             initializeRun();
             
             loaded = true;
+            Destroy(textObject);
+            Destroy(imageObject);
 
         }
         else
         {
             StartCoroutine(loadGenomes());
         }
-        Destroy(textObject);
-        Destroy(imageObject);
 
 
 
@@ -106,6 +127,15 @@ public class CopyOfMain : MonoBehaviour {
         monsterdata.current.jumplearned = jumplearned;
         monsterdata.current.money = sightsense.money;
         monsterdata.current.learningjump = percentagelearnt;
+        monsterdata.current.hungry = sightsense.hungry;
+        monsterdata.current.sleep = sightsense.sleep;
+        monsterdata.current.bedlevel = bedlevel;
+        monsterdata.current.bedprice = bedcost;
+        monsterdata.current.foodlevel = foodlevel;
+        monsterdata.current.foodprice = foodcost;
+        monsterdata.current.coinlevel = sightsense.coinlevel;
+        monsterdata.current.moneycost = moneycost;
+
         savedGame = monsterdata.current;
         BinaryFormatter bf = new BinaryFormatter();
         //Application.persistentDataPath is a string, so if you wanted you can put that into debug.log if you want to know where save games are located
@@ -115,6 +145,12 @@ public class CopyOfMain : MonoBehaviour {
         file.Close();
 
     
+    }
+    public void goHome()
+    {
+        saveGame();
+        SceneManager.LoadScene("house scene");
+
     }
     private IEnumerator loadGenomes()
     {
@@ -130,12 +166,14 @@ public class CopyOfMain : MonoBehaviour {
         }
         initializeRun();
         loaded = true;
+        Destroy(textObject);
+        Destroy(imageObject);
 
 
     }
 
-    // Update is called once per frame
-    void Update () {
+    // Tying the gameplay to the frames wasn't a good idea, please use fixedupdate
+    void FixedUpdate () {
         //print(pool.getspecies().Count);
         if (loaded)
         {
@@ -150,29 +188,38 @@ public class CopyOfMain : MonoBehaviour {
                 timeout = timeoutconstant;
             }
             
+            if (dontsave)
+                initializeRun();
             timeout--;
             float timeoutBonus = (Time.frameCount - lastframetotal) / 4;
             if (timeout + timeoutBonus <= 0 || monster.position.y < ending.position.y)
             {
-                int fitness = sightsense.getRightMost() - (Time.frameCount - lastframetotal) / 4;
+                int fitness = (int) sightsense.getRightMost() - (int) initialPosition.x;
                 if (sightsense.getRightMost() > ending.position.x)
                 {
                     //game has ended, so give a better fitness than others
                     fitness += 1000;
+                    
+                    sightsense.money += 1000 * (int)Mathf.Pow(2, sightsense.coinlevel);
+                            
                 }
                 if (fitness == 0)
                 {
                     fitness = -1;
 
                 }
-                genome.setDistanceTraveled(fitness);
-                if (fitness > pool.getMaxFitness())
-                {
-                    pool.setMaxFitness(fitness);
-                    //saveNetwork();
-                }
-                pool.setCurrentGenome(0);
-                pool.setCurrentSpecies(0);
+                
+                    genome.setDistanceTraveled(fitness);
+                    if (fitness > pool.getMaxFitness())
+                    {
+                        pool.setMaxFitness(fitness);
+                        //saveNetwork();
+                    }
+                    pool.setCurrentGenome(0);
+                    pool.setCurrentSpecies(0);
+                
+                
+                
                 while (pool.getSpecies()[pool.getcurrentspecies()].getGenomes()[pool.getcurrentgenome()].getDistanceTraveled() != 0)   
                 {
                     pool.setCurrentGenome(pool.getcurrentgenome() + 1);
@@ -183,7 +230,7 @@ public class CopyOfMain : MonoBehaviour {
                         if (pool.getcurrentspecies() >= pool.getSpecies().Count)
                         {
                             pool.newGeneration(sightsense);
-                            if (jumplearned)
+                            if (jumplearned )
                             {
                                 saveNetwork();
 
@@ -196,7 +243,11 @@ public class CopyOfMain : MonoBehaviour {
 
                 }
                 initializeRun();
-                whentosave++;
+               
+                
+                    whentosave++;
+                
+                
                 if (whentosave == 50)
                 {
                     whentosave = 0;
@@ -212,8 +263,9 @@ public class CopyOfMain : MonoBehaviour {
 
            
        }
-            
-        
+
+        dontsave = false;
+
     }
     void saveNetwork()
     {
@@ -284,8 +336,15 @@ public class CopyOfMain : MonoBehaviour {
         int[,] input = sightsense.thingsseen;
 
         outputs = genome.evaluateNetwork(input, nameOfOutputs);
+        int falsenumbers = 100 - /*totalfalsenumbers -*/ (sightsense.hungry + sightsense.sleep) / 2;
+        //totalfalsenumbers = falsenumbers;
+        for (int i = 0; i < falsenumbers; i++)
+        {
+            feelingsarray[i] = false;
+        }
         if ((bool)outputs["Left"] && (bool)outputs["Right"])
         {
+            
             outputs["Left"] = false;
             outputs["Right"] = false;
         }
@@ -293,6 +352,13 @@ public class CopyOfMain : MonoBehaviour {
         {
             outputs["Jump"] = false;
 
+        }
+        if (feelingsarray[Random.Range(0, feelingsarray.Length)] == false && falsenumbers > 50)
+        {
+            outputs["Left"] = false;
+            outputs["Right"] = false;
+            outputs["Jump"] = false;
+            dontsave = true;
         }
         sightsense.movemonster(outputs);
 
@@ -303,7 +369,7 @@ public class CopyOfMain : MonoBehaviour {
         Genome genome = new Genome(0, new List<Neuron>(), 0, 0, 0.25f, 2.0f, 0.4f, 0.5f, 0.2f, 0.4f, 0.1f, new List<Genes>());
         genome.setMaxNeuron(sightsense.thingsseen.GetLength(0) * sightsense.thingsseen.GetLength(1) + 1 );
 
-        genome.mutate(pool, sightsense);
+        genome.mutate(pool, sightsense.thingsseen);
 
         return genome;
     }

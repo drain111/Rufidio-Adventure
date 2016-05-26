@@ -153,7 +153,7 @@ public class MainProgram : MonoBehaviour{
         Genome genome = new Genome(0, new List<Neuron>(), 0, 0, 0.25f, 2.0f, 0.4f, 0.5f, 0.2f, 0.4f, 0.1f, new List<Genes>());
         genome.setMaxNeuron(3);
 
-        genome.mutate(pool, sightsense);
+        genome.mutate(pool, sightsense.thingsseen);
 
         return genome;
     }

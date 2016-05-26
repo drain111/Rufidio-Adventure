@@ -18,6 +18,7 @@ public class jumpsonspring : MonoBehaviour {
             collision.gameObject.GetComponent<Rigidbody>().AddForce(new Vector3(0, 80000, 0));
 
         }
+
        
 
     }

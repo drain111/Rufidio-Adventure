@@ -25,7 +25,8 @@ public class Genome : IComparable<Genome>
     [XmlArray("mutationNumbers")]
     [XmlArrayItem("Numbers")]
     public List<float> mutationNumbers;
-    Hashtable mutationrates;    
+    Hashtable mutationrates;
+    System.Random randomNumber;
     public Genome (int DistanceTraveled, List<Neuron> Network, int MaxNeuron, int GlobalRank, float MutateConnectionsChance, float LinkMutationChance, float BiasMutationChance, float NodeMutationChance, float EnableMutationChance, float DisableMutationChance, float StepSize, List<Genes> Genes)
     {
         distancetraveled = DistanceTraveled;
@@ -58,12 +59,15 @@ public class Genome : IComparable<Genome>
         mutationrates.Add("enable", EnableMutationChance);
         mutationrates.Add("disable", DisableMutationChance);
         mutationrates.Add("step", StepSize);
+        randomNumber = new System.Random();
 
     }
     public Genome() : base()
     {
         network = new List<Neuron>();
         genes = new List<Genes>();
+        randomNumber = new System.Random();
+
     }
     public void setMutations()
     {
@@ -129,14 +133,15 @@ public class Genome : IComparable<Genome>
     {
         return genes;
     }
-    public void mutate( Pool pool, sightsense sightsense)
+    public void mutate( Pool pool, int[,] sightsense)
     {
         Hashtable aux = new Hashtable();
 
         foreach (DictionaryEntry entry in mutationrates)
         {
             aux.Add(entry.Key, entry.Value);
-            if (UnityEngine.Random.Range(1, 3) == 1)
+            //if (UnityEngine.Random.Range(1, 3) == 1)
+            if (randomNumber.Next(1, 3) == 1)
             {
                 aux[entry.Key] = 0.95f * (float)entry.Value;
 
@@ -149,43 +154,49 @@ public class Genome : IComparable<Genome>
         }
         mutationrates = aux;
         setMutations();
-        if (UnityEngine.Random.Range(0f, 1f) < (float)mutationrates["connections"])
+        //if (UnityEngine.Random.Range(0f, 1f) < (float)mutationrates["connections"])
+        if (randomNumber.NextDouble() < (float)mutationrates["connections"])
         {
             PointMutates();
         }
 
         for (float i = (float)mutationrates["link"]; i > 0; i--)
         {
-            if (UnityEngine.Random.Range(0f, 1f) < i)
+           // if (UnityEngine.Random.Range(0f, 1f) < i)
+            if (randomNumber.NextDouble() < i)
             {
-                LinkMutates(false, sightsense.i * sightsense.j + 1, pool);
+                LinkMutates(false, sightsense.GetLength(0) * sightsense.GetLength(1) + 1, pool);
             }
         }
 
         for (float i = (float)mutationrates["bias"]; i > 0; i--)
         {
-            if (UnityEngine.Random.Range(0f, 1f) < i)
+            //if (UnityEngine.Random.Range(0f, 1f) < i)
+            if (randomNumber.NextDouble() < i)
             {
-                LinkMutates(true, sightsense.i * sightsense.j + 1, pool);
+                LinkMutates(true, sightsense.GetLength(0) * sightsense.GetLength(1) + 1, pool);
             }
         }
         for (float i = (float)mutationrates["node"]; i > 0; i--)
         {
-            if (UnityEngine.Random.Range(0f, 1f) < i)
+            // if (UnityEngine.Random.Range(0f, 1f) < i)
+            if (randomNumber.NextDouble() < i)
             {
                 NodeMutates(pool);
             }
         }
         for (float i = (float)mutationrates["enable"]; i > 0; i--)
         {
-            if (UnityEngine.Random.Range(0f, 1f) < i)
+            //if (UnityEngine.Random.Range(0f, 1f) < i)
+            if (randomNumber.NextDouble() < i)
             {
                 enableDisableMutates(true);
             }
         }
         for (float i = (float)mutationrates["disable"]; i > 0; i--)
         {
-            if (UnityEngine.Random.Range(0f, 1f) < i)
+            //if (UnityEngine.Random.Range(0f, 1f) < i)
+            if (randomNumber.NextDouble() < i)
             {
                 enableDisableMutates(false);
             }
@@ -199,10 +210,16 @@ public class Genome : IComparable<Genome>
         for (int i = 0; i < genes.Count; i++)
         {
             Genes gene = genes[i];
-            if (UnityEngine.Random.value < 0.9f)
-                gene.setweight(gene.getweight() + UnityEngine.Random.value * step * 2 - step);
+            //if (UnityEngine.Random.value < 0.9f)
+            if (randomNumber.NextDouble() < 0.9f)
+
+           // gene.setweight(gene.getweight() + UnityEngine.Random.value * step * 2 - step);
+            gene.setweight(gene.getweight() + ((float)randomNumber.NextDouble()) * step * 2 - step);
+
             else
-                gene.setweight(UnityEngine.Random.value * 4 - 2);
+                //gene.setweight(UnityEngine.Random.value * 4 - 2);
+                gene.setweight(((float)randomNumber.NextDouble()) * 4 - 2);
+
         }
     }
     void LinkMutates(bool forceBias, int inputs, Pool pool)
@@ -236,7 +253,9 @@ public class Genome : IComparable<Genome>
         if (!containsLink(newLink))
         {
             newLink.setInnovation(pool.newInnovation());
-            newLink.setweight(UnityEngine.Random.value * 4 - 2);
+            //newLink.setweight(UnityEngine.Random.value * 4 - 2);
+            newLink.setweight(((float) randomNumber.NextDouble()) * 4 - 2);
+
             genes.Add(newLink);
         }
     }
@@ -288,7 +307,9 @@ public class Genome : IComparable<Genome>
             }
         }
 
-        int n = UnityEngine.Random.Range(1, count+1);
+        //int n = UnityEngine.Random.Range(1, count+1);
+        int n = randomNumber.Next(1, count+1);
+
 
         for (int i = 0; i < neurons.Length; i++)
         {
@@ -310,7 +331,8 @@ public class Genome : IComparable<Genome>
         if (genes.Count !=0)
         {
             maxneuron++;
-            Genes gene = genes[UnityEngine.Random.Range(0, genes.Count)];
+            //Genes gene = genes[UnityEngine.Random.Range(0, genes.Count)];
+            Genes gene = genes[randomNumber.Next(0, genes.Count)];
             if (gene.getenabled())
             {
                 gene.setenabled(false);
@@ -344,7 +366,8 @@ public class Genome : IComparable<Genome>
         }
         if (listgenes.Count != 0)
         {
-            Genes aux = listgenes[UnityEngine.Random.Range(0, listgenes.Count)];
+            //Genes aux = listgenes[UnityEngine.Random.Range(0, listgenes.Count)];
+            Genes aux = listgenes[randomNumber.Next(0, listgenes.Count)];
             aux.setenabled(!aux.getenabled());
         }
     }
@@ -456,7 +479,7 @@ public class Genome : IComparable<Genome>
             b = aux;
            
         }
-        Genome child = newGenome(pool, sightsense);
+        Genome child = newGenome(pool, sightsense.thingsseen);
         List<Genes> innovations = new List<Genes>();
 
         Genes auxgene = null;
@@ -509,11 +532,11 @@ public class Genome : IComparable<Genome>
         }
         return child;
     }
-    Genome newGenome(Pool pool, sightsense sightsense)
+    Genome newGenome(Pool pool, int[,] sightsense)
     {
 
         Genome genome = new Genome(0, new List<Neuron>(), 0, 0, 0.25f, 2.0f, 0.4f, 0.5f, 0.2f, 0.4f, 0.1f, new List<Genes>());
-        genome.setMaxNeuron(sightsense.thingsseen.GetLength(0) * sightsense.thingsseen.GetLength(0));
+        genome.setMaxNeuron(sightsense.GetLength(0) * sightsense.GetLength(1));
 
         genome.mutate(pool, sightsense);
 

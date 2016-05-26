@@ -59,14 +59,14 @@ public class Pool
         List <Genome> children = new List<Genome>();
         for (int i = 0; i < species.Count; i++)
         {
-            int breed = (int)Mathf.Floor((float) species[i].getAverageFitness() / (float) sum * 300.0f) - 1;
+            int breed = (int)Mathf.Floor((float) species[i].getAverageFitness() / (float) sum * 200.0f) - 1;
             for (int j = 0; j < breed; j++)
             {
                 children.Add(species[i].breedChild(this,sightsense));
             }
         }
         cullSpecies(true);
-        while (children.Count + species.Count < 300)
+        while (children.Count + species.Count < 200)
         {
             children.Add(species[Random.Range(0, species.Count)].breedChild(this, sightsense));
         }
@@ -92,7 +92,7 @@ public class Pool
         {
             Species specie = species[i];
             //300 population
-            int breed = (int) Mathf.Floor((float) specie.getAverageFitness() / (float) sum * 300.0f);
+            int breed = (int) Mathf.Floor((float) specie.getAverageFitness() / (float) sum * 200.0f);
             if (breed >= 1)
             {
                 survived.Add(specie);
