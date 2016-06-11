@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using UnityEngine.UI;
-
+using System.Collections.Generic;
 public class sightsense : MonoBehaviour {
     public GameObject sight;
     public Transform monster;
@@ -13,7 +13,7 @@ public class sightsense : MonoBehaviour {
     public float maxSpeed = 5f;
     public float moveForce = 365f;
     public int rightmost = 0;
-    public int money = 0;
+    public long money = 0;
     bool isonland = false;
     public bool jump = false;
     public float jumpForce = 1000f;
@@ -26,7 +26,13 @@ public class sightsense : MonoBehaviour {
     public int hungry = 100;
     public Text moneytext;
     public int coinlevel = 0;
-
+    public int witchlevel = 0;
+    public GameObject fireball;
+    List<GameObject> arrayofmeteorites = new List<GameObject>();
+    float timesincefire = 0.0f;
+    public bool crashedWithDragon = false;
+    public bool finished = false;
+    public AudioClip coinClip;
 
     // Use this for initialization
     void Awake () {
@@ -48,6 +54,7 @@ public class sightsense : MonoBehaviour {
         actualsizex = monsteractualsize.x;
         actualsizey = monsteractualsize.y;
 
+        
 
     }
     public int getRightMost()
@@ -74,8 +81,7 @@ public class sightsense : MonoBehaviour {
     }
     // Update is called once per frame
     void FixedUpdate () {
-        Bounds monstersize = sphere.GetComponent<MeshFilter>().sharedMesh.bounds;
-        Vector3 monsteractualsize = Matrix4x4.Scale(sphere.GetComponent<Transform>().localScale) * monstersize.size;
+
        
         for (int l = 0; l < j; l++)
         {
@@ -93,6 +99,9 @@ public class sightsense : MonoBehaviour {
                     {
                         case "Ground":
                             thingsseen[l,m] = 1;
+                            break;
+                        case "Witch":
+                            thingsseen[l, m] = 1;
                             break;
                         default:
                             thingsseen[l,m] = 0;
@@ -113,16 +122,33 @@ public class sightsense : MonoBehaviour {
             hungry--;
         }
 
-        moneytext.text = "Money earned: " + money + "\nAwake: " + sleep + "\nHungry: " + hungry;
+        moneytext.text = "Money earned: " + money + "\nAwake: " + sleep + "\nFed: " + hungry;
 
-
+        for (int i = 0; i < arrayofmeteorites.Count; i++)
+        {
+            if (arrayofmeteorites[i] != null)
+            {
+                if (arrayofmeteorites[i].GetComponent<Rigidbody>().position.x > monster.position.x + 200 || arrayofmeteorites[i].GetComponent<Rigidbody>().position.x < monster.position.x - 200)
+                {
+                    GameObject aux = arrayofmeteorites[i];
+                    arrayofmeteorites.RemoveAt(i);
+                    Destroy(aux);
+                }
+            }
+            
+        }
 
 
     }
     void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.layer == 8) isonland = true;
-     
+        if (collision.gameObject.tag.Equals("Witch"))
+        {
+            crashedWithDragon = true;
+        }
+        
+
     }
 
     void OnCollisionExit(Collision collision)
@@ -137,22 +163,26 @@ public class sightsense : MonoBehaviour {
         {
             
             money = money + (int) Mathf.Pow(2, coinlevel);
-                   
-            
 
 
+            AudioSource audio = GetComponent<AudioSource>();
+            audio.PlayOneShot(coinClip);
 
             monsterdata.current.money = money;
             Destroy(collision.gameObject);
-            moneytext.text = "Money earned: " + money + "\nAwake: " + sleep + "\nHungry: " + hungry;
+            moneytext.text = "Money earned: " + money + "\nAwake: " + sleep + "\nFed: " + hungry;
+        }
+        if (collision.gameObject.tag.Equals("Finish"))
+        {
+            finished = true;
         }
     }
     public void movemonster(Hashtable hashTable)
     {
-        
+        float h = -1f;
+
         if ((bool) hashTable["Left"] == true)
         {
-            float h = -1f;
             if (h * rb.velocity.x < maxSpeed)
                 rb.AddForce(Vector2.left * h * moveForce);
 
@@ -161,13 +191,27 @@ public class sightsense : MonoBehaviour {
         }
         else if ((bool)hashTable["Right"] == true)
         {
-            float h = 1f;
+             h = 1f;
             if (h * rb.velocity.x < maxSpeed)
                 rb.AddForce(Vector2.left * h * moveForce);
 
             if (Mathf.Abs(rb.velocity.x) > maxSpeed)
                 rb.velocity = new Vector2(Mathf.Sign(rb.velocity.x) * maxSpeed, rb.velocity.y);
         }
+        if (witchlevel != 0)
+        {
+            if ((bool)hashTable["Attack"] == true && (Time.time - timesincefire) % 4 == 0)
+            {
+                //throwfireball
+                GameObject attack = Instantiate<GameObject>(fireball);
+                attack.GetComponent<Transform>().position = monster.position;
+                attack.GetComponent<Transform>().rotation = monster.rotation;
+                attack.GetComponent<Rigidbody>().AddForce(new Vector3(10000, 0, 0));
+                arrayofmeteorites.Add(attack);
+                timesincefire = Time.time;
+            }
+        }
+        
         if ((bool)hashTable["Jump"] == true)
         {
             if (isonland)

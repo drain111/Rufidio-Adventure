@@ -2,7 +2,7 @@
 using System.Collections;
 
 public class jumpsonspring : MonoBehaviour {
-
+    public AudioClip springSound;
 	// Use this for initialization
 	void Start () {
 	
@@ -16,7 +16,7 @@ public class jumpsonspring : MonoBehaviour {
     {
         if(collision.gameObject.name.Equals("monster")) {
             collision.gameObject.GetComponent<Rigidbody>().AddForce(new Vector3(0, 80000, 0));
-
+            GetComponent<AudioSource>().PlayOneShot(springSound);
         }
 
        

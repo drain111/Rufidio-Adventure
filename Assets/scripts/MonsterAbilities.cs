@@ -11,7 +11,7 @@ public class MonsterAbilities : MonoBehaviour {
     public Text jumptext;
     int sleep = 100;
     int hungry = 100;
-    int money = 0;
+    long money = 0;
     public int bedcost = 100;
     public int foodcost = 100;
     public GameObject bed;
@@ -20,13 +20,21 @@ public class MonsterAbilities : MonoBehaviour {
     public GameObject food;
     public int moneycost = 100;
     public int coinlevel = 0;
-
+    public bool withcisthere = false;
+    public int witchlevel = 0;
+    public int tutorial;
+    public GameObject witchmodel;
     monsterdata monsterdata;
-    
+    AudioSource audioMonster;
+    public AudioClip magic;
+    public AudioClip foodSound;
+    public AudioClip bedSound;
 
-	// Use this for initialization
-	void Awake () {
+    // Use this for initialization
+    void Awake () {
         monsterdata.current = new monsterdata();
+        audioMonster = GetComponent<AudioSource>();
+
         if (File.Exists(Application.persistentDataPath + "/savedGames.gd"))
         {
             BinaryFormatter bf = new BinaryFormatter();
@@ -44,18 +52,34 @@ public class MonsterAbilities : MonoBehaviour {
             foodcost = monsterdata.foodprice;
             moneycost = monsterdata.moneycost;
             coinlevel = monsterdata.coinlevel;
-            jumptext.text = "Jump learned : " + learningjump + " of 100\nMoney earned: " + money;
+            withcisthere = monsterdata.withcisthere;
+            witchlevel = monsterdata.witchlevel;
+            tutorial = monsterdata.tutorial;
+            if (withcisthere)
+            {
+                jumptext.text = "Jump learned : " + learningjump + " of 100\nMoney earned: " + money + "\nAwake: " + sleep + "\nFed: " + hungry + "\nAttack: " + witchlevel + " of 1000";
+
+            }
+            else
+            {
+                jumptext.text = "Jump learned : " + learningjump + " of 100\nMoney earned: " + money + "\nAwake: " + sleep + "\nFed: " + hungry;
+
+            }
 
 
         }
+        if (withcisthere)
+        {
+            witchmodel.SetActive(true);
 
+        }
 
     }
-	public int getMoney()
+	public long getMoney()
     {
         return money;
     }
-    public void setMoney(int MoMoney)
+    public void setMoney(long MoMoney)
     {
         money = MoMoney;
     }
@@ -72,6 +96,10 @@ public class MonsterAbilities : MonoBehaviour {
         monsterdata.current.foodprice = foodcost;
         monsterdata.current.coinlevel = coinlevel;
         monsterdata.current.moneycost = moneycost;
+        monsterdata.current.withcisthere = withcisthere;
+        monsterdata.current.witchlevel = witchlevel;
+        monsterdata.current.tutorial = tutorial;
+
 
     }
     void OnCollisionStay(Collision collision)
@@ -85,59 +113,71 @@ public class MonsterAbilities : MonoBehaviour {
                     if (Time.time % 10 == 0)
                     {
                         hungry++;
+                        audioMonster.PlayOneShot(foodSound);
+
                     }
                     break;
                 case 1:
                     if (Time.time % 9 == 0)
                     {
                         hungry++;
+                        audioMonster.PlayOneShot(foodSound);
+
                     }
                     break;
                 case 2:
                     if (Time.time % 8 == 0)
                     {
+                        audioMonster.PlayOneShot(foodSound);
                         hungry++;
                     }
                     break;
                 case 3:
                     if (Time.time % 7 == 0)
                     {
+                        audioMonster.PlayOneShot(foodSound);
                         hungry++;
                     }
                     break;
                 case 4:
                     if (Time.time % 6 == 0)
                     {
+                        audioMonster.PlayOneShot(foodSound);
                         hungry++;
                     }
                     break;
                 case 5:
                     if (Time.time % 5 == 0)
                     {
+                        audioMonster.PlayOneShot(foodSound);
                         hungry++;
                     }
                     break;
                 case 6:
                     if (Time.time % 4 == 0)
                     {
+                        audioMonster.PlayOneShot(foodSound);
                         hungry++;
                     }
                     break;
                 case 7:
                     if (Time.time % 3 == 0)
                     {
+                        audioMonster.PlayOneShot(foodSound);
                         hungry++;
                     }
                     break;
                 case 8:
                     if (Time.time % 2 == 0)
                     {
+                        audioMonster.PlayOneShot(foodSound);
                         hungry++;
                     }
                     break;
                 case 9:
                     if (Time.time % 1 == 0)
                     {
+                        audioMonster.PlayOneShot(foodSound);
                         hungry++;
                     }
                     break;
@@ -151,6 +191,8 @@ public class MonsterAbilities : MonoBehaviour {
         else
        if (collision.gameObject.tag.Equals("Bed") && sleep < 100)
         {
+            if (Time.time % 4 == 0)
+                audioMonster.PlayOneShot(bedSound);
             switch (bedlevel)
             {
                 case 0:
@@ -221,10 +263,42 @@ public class MonsterAbilities : MonoBehaviour {
 
 
         }
-        jumptext.text = "Jump learned : " + learningjump + " of 100\nMoney earned: " + money + "\nAwake: " + sleep + "\nHungry: " + hungry;
+        if (collision.gameObject.tag.Equals("Witch") && witchlevel < 1000 && Time.time % 2 == 0 && withcisthere && hungry > 0 && sleep > 0)
+        {
+           
+            witchlevel++;
+            if (Time.time % 12 == 0 && hungry > 0)
+            {
+                hungry--;
+            }
+            if (Time.time % 24 == 0 && sleep > 0)
+            {
+                sleep--;
+            }
+            witchmodel.GetComponent<Animator>().SetBool("RufidioInside", true);
+            audioMonster.PlayOneShot(magic);
+        }
+        if (withcisthere)
+        {
+            jumptext.text = "Jump learned : " + learningjump + " of 100\nMoney earned: " + money + "\nAwake: " + sleep + "\nFed: " + hungry + "\nAttack: " + witchlevel + " of 1000";
 
+        }
+        else
+        {
+            jumptext.text = "Jump learned : " + learningjump + " of 100\nMoney earned: " + money + "\nAwake: " + sleep + "\nFed: " + hungry;
+
+        }
         monsterdata.current.sleep = sleep;
         monsterdata.current.hungry = hungry;
+        monsterdata.current.witchlevel = witchlevel;
+    }
+    void OnCollisionExit(Collision collision)
+    {
+        if (collision.gameObject.tag.Equals("Witch") && !withcisthere )
+        {
+            witchmodel.GetComponent<Animator>().SetBool("RufidioInside", false);
+
+        }
     }
     void OnCollisionEnter(Collision collision)
     {
@@ -236,12 +310,20 @@ public class MonsterAbilities : MonoBehaviour {
             {
                 jumplearned = true;
             }
-            jumptext.text = "Jump learned : " + learningjump + " of 100\nMoney earned: " + money + "\nAwake: " + sleep + "\nHungry: " + hungry;
 
         }
+       
+        if (withcisthere)
+        {
+            jumptext.text = "Jump learned : " + learningjump + " of 100\nMoney earned: " + money + "\nAwake: " + sleep + "\nFed: " + hungry + "\nAttack: " + witchlevel + " of 1000";
+            
+        }
+        else
+        {
+            jumptext.text = "Jump learned : " + learningjump + " of 100\nMoney earned: " + money + "\nAwake: " + sleep + "\nFed: " + hungry;
 
-
-
+        }
+        monsterdata.current.witchlevel = witchlevel;
         monsterdata.current.jumplearned = jumplearned;
         monsterdata.current.learningjump = learningjump;
         monsterdata.current.money = money;

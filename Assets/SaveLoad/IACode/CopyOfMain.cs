@@ -7,11 +7,13 @@ using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
 using UnityEngine.SceneManagement;
-
+using System;
+using System.Threading;
 public class CopyOfMain : MonoBehaviour {
     int Population = 200;
     sightsense sightsense;
-    int rightmost = 0;
+    Rect windowRect ;
+
     Pool pool;
     int timeout = 0;
     int timeoutconstant = 5;
@@ -35,7 +37,11 @@ public class CopyOfMain : MonoBehaviour {
     bool dontsave = false;
     bool[] feelingsarray;
     int moneycost;
-    int totalfalsenumbers = 0;
+    bool witchisthere = false;
+    bool threadStarted = false;
+    int tutorial;
+    Thread newThread;
+    giveThreadつo_oつ giveThreadつo_oつ;
     // Use this for initialization
     public void Start () {
         monster = GameObject.FindGameObjectWithTag("Player").GetComponent<Transform>();
@@ -44,10 +50,8 @@ public class CopyOfMain : MonoBehaviour {
         outputs.Add("Jump", false);
         outputs.Add("Left", false);
         outputs.Add("Right", false);
-        nameOfOutputs = new string[] { "Jump", "Left", "Right" };
-        Canvas thiscanvas = GameObject.FindGameObjectWithTag("Player").GetComponentInChildren<Canvas>();
         feelingsarray = new bool[100];
-        
+        windowRect = new Rect(Screen.currentResolution.width / 100, Screen.currentResolution.height / 100, Screen.currentResolution.width * 98 / 100, Screen.currentResolution.height * 98 / 100);
         sightsense = GameObject.FindGameObjectWithTag("Player").GetComponent<sightsense>();
         sightsense.setRightMost((int) monster.position.x);
         monsterdata.current = new monsterdata();
@@ -70,8 +74,22 @@ public class CopyOfMain : MonoBehaviour {
             foodcost = savedGame.foodprice;
             moneycost = savedGame.moneycost;
             sightsense.coinlevel = savedGame.coinlevel;
+            sightsense.witchlevel = savedGame.witchlevel;
+            witchisthere = savedGame.withcisthere;
+            tutorial = savedGame.tutorial;
+
         }
-      
+        if (witchisthere)
+        {
+            nameOfOutputs = new string[] { "Jump", "Left", "Right", "Attack" };
+            outputs.Add("Attack", false);
+        }
+        else
+        {
+            nameOfOutputs = new string[] { "Jump", "Left", "Right"};
+
+        }
+
         for (int i = 0; i < 100; i++)
         {
             feelingsarray[i] = true;
@@ -79,7 +97,7 @@ public class CopyOfMain : MonoBehaviour {
         //loadfile TODO
         //Creating basic pool, if couldn't load
 
-        pool = new Pool(0, 0, 0, 0, 0, 3, new List<Species>());
+        pool = new Pool(0, 0, 0, 0, 0, nameOfOutputs.Length, new List<Species>());
         /* write to file 1st try, too slow
         if (File.Exists(Application.persistentDataPath + "/MonsterPool.gd"))
         {
@@ -105,8 +123,36 @@ public class CopyOfMain : MonoBehaviour {
                 }
             }
             stream.Close();
-            initializeRun();
-            
+
+            if (pool.getSpecies().Count <= pool.getcurrentspecies() || pool.getSpecies()[pool.getcurrentspecies()].getGenomes().Count <= pool.getcurrentgenome() )
+            {
+                UnityEngine.Object.DontDestroyOnLoad(this.gameObject);
+                SceneManager.LoadScene("Loading Screen");
+                giveThreadつo_oつ = new giveThreadつo_oつ(pool, sightsense, nameOfOutputs);
+                newThread = new Thread(new ThreadStart(giveThreadつo_oつ.ThreadRun));
+                threadStarted = true;
+
+                try
+                {
+                    newThread.Start();
+                }
+                catch (ThreadStateException e)
+                {
+                    Console.WriteLine(e);  // Display text of exception
+                }
+                catch (ThreadInterruptedException e)
+                {
+                    Console.WriteLine(e);  // This exception means that the thread
+                                           // was interrupted during a Wait
+                }
+
+            }
+            else
+            {
+                initializeRun();
+
+            }
+
             loaded = true;
             Destroy(textObject);
             Destroy(imageObject);
@@ -135,6 +181,9 @@ public class CopyOfMain : MonoBehaviour {
         monsterdata.current.foodprice = foodcost;
         monsterdata.current.coinlevel = sightsense.coinlevel;
         monsterdata.current.moneycost = moneycost;
+        monsterdata.current.witchlevel = sightsense.witchlevel;
+        monsterdata.current.withcisthere = witchisthere;
+        monsterdata.current.tutorial = tutorial;
 
         savedGame = monsterdata.current;
         BinaryFormatter bf = new BinaryFormatter();
@@ -145,6 +194,20 @@ public class CopyOfMain : MonoBehaviour {
         file.Close();
 
     
+    }
+    void OnGUI()
+    {
+        if (sightsense.finished)
+        {
+            windowRect = GUI.Window(0, windowRect, DoMyWindow, "My Window");
+
+        }
+    }
+    void DoMyWindow(int id)
+    {
+
+        GUI.TextField(new Rect(windowRect.width / 8, windowRect.height / 8, windowRect.width * 7 / 8, windowRect.height * 7 / 8), "You Won");
+        GUI.skin.textField.fontSize = 100;
     }
     public void goHome()
     {
@@ -164,6 +227,7 @@ public class CopyOfMain : MonoBehaviour {
             yield return null;
 
         }
+        
         initializeRun();
         loaded = true;
         Destroy(textObject);
@@ -175,7 +239,7 @@ public class CopyOfMain : MonoBehaviour {
     // Tying the gameplay to the frames wasn't a good idea, please use fixedupdate
     void FixedUpdate () {
         //print(pool.getspecies().Count);
-        if (loaded)
+        if (loaded && threadStarted == false )
         {
             Genome genome = pool.getSpecies()[pool.getcurrentspecies()].getGenomes()[pool.getcurrentgenome()];
             if (Time.frameCount % 5 == 0)
@@ -192,8 +256,9 @@ public class CopyOfMain : MonoBehaviour {
                 initializeRun();
             timeout--;
             float timeoutBonus = (Time.frameCount - lastframetotal) / 4;
-            if (timeout + timeoutBonus <= 0 || monster.position.y < ending.position.y)
+            if (timeout + timeoutBonus <= 0 || monster.position.y < ending.position.y || sightsense.crashedWithDragon || (sightsense.finished && Time.time % 5 == 0))
             {
+                sightsense.crashedWithDragon = false;
                 int fitness = (int) sightsense.getRightMost() - (int) initialPosition.x;
                 if (sightsense.getRightMost() > ending.position.x)
                 {
@@ -208,7 +273,7 @@ public class CopyOfMain : MonoBehaviour {
                     fitness = -1;
 
                 }
-                
+                sightsense.finished = false;
                     genome.setDistanceTraveled(fitness);
                     if (fitness > pool.getMaxFitness())
                     {
@@ -229,23 +294,41 @@ public class CopyOfMain : MonoBehaviour {
                         pool.setCurrentSpecies(pool.getcurrentspecies() + 1);
                         if (pool.getcurrentspecies() >= pool.getSpecies().Count)
                         {
-                            pool.newGeneration(sightsense);
-                            if (jumplearned )
-                            {
-                                saveNetwork();
-
-                            }
                             saveGame();
-                            SceneManager.LoadScene("adventure map");
+
+                            UnityEngine.Object.DontDestroyOnLoad(this.gameObject);
+                            SceneManager.LoadScene("Loading Screen");
+                            giveThreadつo_oつ = new giveThreadつo_oつ(pool, sightsense, nameOfOutputs);
+                            newThread = new Thread(new ThreadStart(giveThreadつo_oつ.ThreadRun));
+                            threadStarted = true;
+
+                            try
+                            {
+                                newThread.Start();
+                                break;
+                            }
+                            catch (ThreadStateException e)
+                            {
+                                Console.WriteLine(e);  // Display text of exception
+                            }
+                            catch (ThreadInterruptedException e)
+                            {
+                                Console.WriteLine(e);  // This exception means that the thread
+                                                       // was interrupted during a Wait
+                            }
+                           
                         }
                     }
 
 
                 }
-                initializeRun();
-               
-                
-                    whentosave++;
+                if (threadStarted == false)
+                {
+                    initializeRun();
+                }
+
+
+                whentosave++;
                 
                 
                 if (whentosave == 50)
@@ -263,7 +346,20 @@ public class CopyOfMain : MonoBehaviour {
 
            
        }
+        if (threadStarted == true)
+        {
+            if (giveThreadつo_oつ.giveFinishedつo_oつ())
+            {
+                if (jumplearned)
+                {
+                    saveNetwork();
 
+                }
+                SceneManager.LoadScene("adventure map");
+                Destroy(this.gameObject);
+            }
+           
+        }
         dontsave = false;
 
     }
@@ -288,12 +384,12 @@ public class CopyOfMain : MonoBehaviour {
                
         if (!Directory.Exists("DataFiles"))
         {
-            DirectoryInfo DataFilesfolder = Directory.CreateDirectory( "DataFiles"); // returns a DirectoryInfo object
+            Directory.CreateDirectory( "DataFiles"); // returns a DirectoryInfo object
 
         }
         if (!Directory.Exists( "DataFiles/IA"))
         {
-            DirectoryInfo DataFilesfolder = Directory.CreateDirectory("DataFiles/IA"); // returns a DirectoryInfo object
+            Directory.CreateDirectory("DataFiles/IA"); // returns a DirectoryInfo object
 
         }
         if (File.Exists( "DataFiles/IA/monsters.xml"))
@@ -313,12 +409,12 @@ public class CopyOfMain : MonoBehaviour {
         lastframetotal = Time.frameCount;
         monster.position = initialPosition;
         sightsense.setRightMost((int) monster.position.x);
-        rightmost = (int) monster.position.x;
+
         pool.setCurrentFrame(0);
         timeout = timeoutconstant;
         clearOutputs();
         Genome genome = pool.getSpecies()[pool.getcurrentspecies()].getGenomes()[pool.getcurrentgenome()];
-        genome.generateNetwork(sightsense.thingsseen.Length);
+        genome.generateNetwork(sightsense.thingsseen.Length, nameOfOutputs.Length);
         evaluateCurrent();
 
     }
@@ -328,6 +424,10 @@ public class CopyOfMain : MonoBehaviour {
         outputs.Add("Jump", false);
         outputs.Add("Left", false);
         outputs.Add("Right", false);
+        if (witchisthere)
+        {
+           outputs.Add("Attack", false);
+        }
         sightsense.movemonster(outputs);
     }
     void evaluateCurrent()
@@ -353,12 +453,19 @@ public class CopyOfMain : MonoBehaviour {
             outputs["Jump"] = false;
 
         }
-        if (feelingsarray[Random.Range(0, feelingsarray.Length)] == false && falsenumbers > 50)
+        if (sightsense.witchlevel < 1000)
+        {
+            outputs["Attack"] = false;
+        }
+        if (feelingsarray[UnityEngine.Random.Range(0, feelingsarray.Length)] == false && falsenumbers > 50)
         {
             outputs["Left"] = false;
             outputs["Right"] = false;
             outputs["Jump"] = false;
+
             dontsave = true;
+            
+
         }
         sightsense.movemonster(outputs);
 
@@ -369,9 +476,44 @@ public class CopyOfMain : MonoBehaviour {
         Genome genome = new Genome(0, new List<Neuron>(), 0, 0, 0.25f, 2.0f, 0.4f, 0.5f, 0.2f, 0.4f, 0.1f, new List<Genes>());
         genome.setMaxNeuron(sightsense.thingsseen.GetLength(0) * sightsense.thingsseen.GetLength(1) + 1 );
 
-        genome.mutate(pool, sightsense.thingsseen);
+        genome.mutate(pool, sightsense.thingsseen, nameOfOutputs.Length);
 
         return genome;
     }
 
+}
+
+public class giveThreadつo_oつ
+{
+    Pool pool;
+    sightsense sightsense;
+    string[] nameOfOutputs;
+    bool finished = false;
+    public giveThreadつo_oつ(Pool Pool, sightsense Sightsense, string[] NameOfOutputs)
+    {
+        pool = Pool;
+        sightsense = Sightsense;
+        nameOfOutputs = NameOfOutputs;
+    }
+    public void ThreadRun()
+    {
+        pool.newGeneration(sightsense, nameOfOutputs.Length);
+        finished = true;
+    }
+    public Pool givePoolつo_oつ()
+    {
+        return pool;
+    }
+    public sightsense giveSightsenseつo_oつ()
+    {
+        return sightsense;
+    }
+    public bool giveFinishedつo_oつ()
+    {
+        return finished;
+    }
+    public string[] giveDiretideつo_oつ()
+    {
+        return nameOfOutputs;
+    }
 }

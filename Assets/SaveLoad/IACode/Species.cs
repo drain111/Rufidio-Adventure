@@ -20,11 +20,12 @@ public class Species {
     float DeltaWeights = 0.4f;
     float DeltaThreshold = 1.0f;
 
-	public Species (int TopFitness, int Staleness, List<Genome> Genome, int AverageFitness) {
+    public Species (int TopFitness, int Staleness, List<Genome> Genome, int AverageFitness) {
         topfitness = TopFitness;
         staleness = Staleness;
         genomes = Genome;
         averagefitness = AverageFitness;
+
     }
     public Species() : base()
     {
@@ -153,18 +154,21 @@ public class Species {
         averagefitness = total / genomes.Count;
     }
 
-    public Genome breedChild(Pool pool, sightsense sightsense)
+    public Genome breedChild(Pool pool, sightsense sightsense, int numberOfOutputs)
     {
+        System.Random randomNumber = new System.Random();
+        ;
+
         Genome child;
-        if (Random.value < CrossoverChance)
+        if ((float) randomNumber.NextDouble() < CrossoverChance)
         {
-            child = genomes[Random.Range(0, genomes.Count)].crossover(genomes[Random.Range(0, genomes.Count)], pool, sightsense);
+            child = genomes[randomNumber.Next(0, genomes.Count)].crossover(genomes[randomNumber.Next(0, genomes.Count)], pool, sightsense, numberOfOutputs);
         }
         else
         {
-            child = genomes[Random.Range(0, genomes.Count)].copyGenome();
+            child = genomes[randomNumber.Next(0, genomes.Count)].copyGenome();
         }
-        child.mutate(pool, sightsense.thingsseen);
+        child.mutate(pool, sightsense.thingsseen, numberOfOutputs);
 
         return child;
     }

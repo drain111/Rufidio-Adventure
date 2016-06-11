@@ -35,6 +35,9 @@ public class gotoadventuremap : MonoBehaviour {
             ShoppingRect = new Rect(Screen.currentResolution.width / 100, Screen.currentResolution.height / 100, Screen.currentResolution.width * 86 / 100, Screen.currentResolution.height * 95 / 100);
 
         }
+      
+
+
         sightsense = new int[5, 10];
         for (int i = 0; i < 5; i++)
         {
@@ -43,7 +46,7 @@ public class gotoadventuremap : MonoBehaviour {
                 sightsense[i, j] = 0;
             }
         }
-        desiredobject = new pleaseWork(sightsense);
+        desiredobject = new pleaseWork(sightsense, shopdata.withcisthere);
 
         if (!File.Exists("DataFiles/IA/monsters.xml"))
         {
@@ -94,6 +97,39 @@ public class gotoadventuremap : MonoBehaviour {
         {
             ShoppingRect = GUI.Window(2, ShoppingRect, Shop, "What to buy?");
         }
+        if (shopdata.tutorial < 5)
+        {
+            ShoppingRect = GUI.Window(3, ShoppingRect, Tutorial, "What to buy?");
+        }
+    }
+    void Tutorial(int windowsID)
+    {
+        switch (shopdata.tutorial)
+        {
+            case 0:
+                if (GUI.Button(new Rect(ShoppingRect.width / 8, ShoppingRect.height / 8, ShoppingRect.width * 7 / 8, ShoppingRect.height * 7 / 8), "Welcome to Rufidio Adventure. Press this button to advance on the tutorial."))
+                    shopdata.tutorial++;
+                break;
+            case 1:
+                if (GUI.Button(new Rect(ShoppingRect.width / 8, ShoppingRect.height / 8, ShoppingRect.width * 7 / 8, ShoppingRect.height * 7 / 8), "In this game you have to take care of Ruffidio by feeding him and making him sleep in order to be able to complete the adventure map. \n Drag him with the cursor over the objects in order to take care of him or train him. "))
+                    shopdata.tutorial++;
+                break;
+            case 2:
+                if (GUI.Button(new Rect(ShoppingRect.width / 8, ShoppingRect.height / 8, ShoppingRect.width * 7 / 8, ShoppingRect.height * 7 / 8), "At the beggining Ruffidio doesn't know how to jump, so drag him to the spring to train him. \n He will learn once the jump learned indicator gets to 100."))
+                    shopdata.tutorial++;
+                break;
+            case 3:
+                if (GUI.Button(new Rect(ShoppingRect.width / 8, ShoppingRect.height / 8, ShoppingRect.width * 7 / 8, ShoppingRect.height * 7 / 8), "In the adventure map, Ruffidio will travel by himself to get to the ending and will collect coins. Once he collects some coins, you can buy objects in this map. \n This objects will teach more abilities to Ruffidio or will decease the time needed to recover when Ruffidio is hungry or tired, and the amount of coins will increase too."))
+                    shopdata.tutorial++;
+                break;
+            case 4:
+                if (GUI.Button(new Rect(ShoppingRect.width / 8, ShoppingRect.height / 8, ShoppingRect.width * 7 / 8, ShoppingRect.height * 7 / 8), "This is everything you need to know, have fun!"))
+                    shopdata.tutorial++;
+                break;
+            default:
+                break;
+            
+        }
     }
     public void startShopping()
     {
@@ -141,7 +177,7 @@ public class gotoadventuremap : MonoBehaviour {
         }
         else
         {
-            GUI.Button(new Rect(ShoppingRect.width / 8, ShoppingRect.height / 8, ShoppingRect.width / 8, ShoppingRect.height / 8), "Food is upgraded \n to the maximum level");
+            GUI.Button(new Rect(ShoppingRect.width * 3 / 8, ShoppingRect.height / 8, ShoppingRect.width / 8, ShoppingRect.height / 8), "Food is upgraded \n to the maximum level");
         }
         if (GUI.Button(new Rect(ShoppingRect.width * 6 / 8, ShoppingRect.height / 8, ShoppingRect.width / 8, ShoppingRect.height / 8), "Exit the menu"))
             shopping = false;
@@ -167,6 +203,35 @@ public class gotoadventuremap : MonoBehaviour {
             GUI.Button(new Rect(ShoppingRect.width / 8, ShoppingRect.height / 8, ShoppingRect.width / 8, ShoppingRect.height / 8), "Coin are upgraded \n to the maximum level");
 
         }
+        if (!shopdata.withcisthere)
+        {
+            if (GUI.Button(new Rect(ShoppingRect.width * 3 / 8, ShoppingRect.height * 2 / 8, ShoppingRect.width / 8, ShoppingRect.height / 8), "Summon the witch \n in order to learn to fight:  10000"))
+            {
+                if (shopdata.getMoney() >= 10000)
+                {
+                    shopdata.setMoney(shopdata.getMoney() - 10000);
+                    shopdata.withcisthere = true;
+                    shopdata.witchmodel.SetActive(true);
+
+                    monsterdata.current.withcisthere = shopdata.withcisthere;
+
+                    monsterdata.current.money = shopdata.getMoney();
+                    File.Delete("DataFiles/IA/monsters.xml");
+                    savedGame = monsterdata.current;
+
+                    BinaryFormatter bf = new BinaryFormatter();
+                    //Application.persistentDataPath is a string, so if you wanted you can put that into debug.log if you want to know where save games are located
+                    print(Application.persistentDataPath);
+                    FileStream file = File.Create(Application.persistentDataPath + "/savedGames.gd"); //you can call it anything you want
+                    bf.Serialize(file, savedGame);
+                    file.Close();
+                    SceneManager.LoadScene("house scene");
+                    //delete the NN, save, and restart level
+
+
+                }
+            }
+        }
 
     }
     void DoPreparedWindow(int windowID)
@@ -188,8 +253,16 @@ public class gotoadventuremap : MonoBehaviour {
         Genome genome = new Genome(0, new List<Neuron>(), 0, 0, 0.25f, 2.0f, 0.4f, 0.5f, 0.2f, 0.4f, 0.1f, new List<Genes>());
         genome.setMaxNeuron(51);
 
-        genome.mutate(pool, sightsense);
+        if (shopdata.withcisthere)
+        {
+            genome.mutate(pool, sightsense, 4);
 
+        }
+        else
+        {
+            genome.mutate(pool, sightsense, 3);
+
+        }
         return genome;
     }
     private void loadGenomes()
@@ -234,12 +307,12 @@ public class gotoadventuremap : MonoBehaviour {
 
         if (!Directory.Exists("DataFiles"))
         {
-            DirectoryInfo DataFilesfolder = Directory.CreateDirectory("DataFiles"); // returns a DirectoryInfo object
+            Directory.CreateDirectory("DataFiles"); // returns a DirectoryInfo object
 
         }
         if (!Directory.Exists("DataFiles/IA"))
         {
-            DirectoryInfo DataFilesfolder = Directory.CreateDirectory("DataFiles/IA"); // returns a DirectoryInfo object
+            Directory.CreateDirectory("DataFiles/IA"); // returns a DirectoryInfo object
 
         }
         if (File.Exists("DataFiles/IA/monsters.xml"))
@@ -256,7 +329,7 @@ public class gotoadventuremap : MonoBehaviour {
     }
     public void GoToAdventure()
     {
-        if ((loaded || desiredobject.loaded) && !shopping)
+        if ((loaded || desiredobject.loaded) && !shopping && (shopdata.tutorial >= 5))
         {
             if (threadcreated)
             {
@@ -285,13 +358,25 @@ public class pleaseWork
     public bool loaded = false;
     public bool hidewindows = true;
     int[,] sightsense;
-    public pleaseWork(int[,] SIghtSense)
+    bool witchisthere = false;
+    public pleaseWork(int[,] SIghtSense, bool activatedwitch)
     {
         sightsense = SIghtSense;
+        witchisthere = activatedwitch;
     }
     public void ThreadRun()
     {
-        Pool pool = new Pool(0, 0, 0, 0, 0, 3, new List<Species>());
+        Pool pool;
+        if (witchisthere)
+        {
+            pool = new Pool(0, 0, 0, 0, 0, 4, new List<Species>());
+
+        }
+        else
+        {
+            pool = new Pool(0, 0, 0, 0, 0, 3, new List<Species>());
+
+        }
         int i = 0;
         
         
@@ -310,6 +395,10 @@ public class pleaseWork
     }
     public void loadGenomes()
     {
+        if (true)
+        {
+
+        }
         Pool pool = new Pool(0, 0, 0, 0, 0, 3, new List<Species>());
 
         int i = 0;
@@ -336,8 +425,16 @@ public class pleaseWork
 
         Genome genome = new Genome(0, new List<Neuron>(), 0, 0, 0.25f, 2.0f, 0.4f, 0.5f, 0.2f, 0.4f, 0.1f, new List<Genes>());
         genome.setMaxNeuron(51);
+        if (witchisthere)
+        {
+            genome.mutate(pool, sightsense, 4);
 
-        genome.mutate(pool, sightsense);
+        }
+        else
+        {
+            genome.mutate(pool, sightsense, 3);
+
+        }
 
         return genome;
     }
@@ -362,12 +459,12 @@ public class pleaseWork
 
         if (!Directory.Exists("DataFiles"))
         {
-            DirectoryInfo DataFilesfolder = Directory.CreateDirectory("DataFiles"); // returns a DirectoryInfo object
+            Directory.CreateDirectory("DataFiles"); // returns a DirectoryInfo object
 
         }
         if (!Directory.Exists("DataFiles/IA"))
         {
-            DirectoryInfo DataFilesfolder = Directory.CreateDirectory("DataFiles/IA"); // returns a DirectoryInfo object
+            Directory.CreateDirectory("DataFiles/IA"); // returns a DirectoryInfo object
 
         }
         if (File.Exists("DataFiles/IA/monsters.xml"))

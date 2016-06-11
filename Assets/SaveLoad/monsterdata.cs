@@ -7,7 +7,7 @@ public class monsterdata{
     public static monsterdata current;
     public int learningjump;
     public bool jumplearned;
-    public int money;
+    public long money;
     public int sleep;
     public int hungry;
     public int bedlevel;
@@ -16,6 +16,9 @@ public class monsterdata{
     public int bedprice;
     public int coinlevel;
     public int moneycost;
+    public bool withcisthere;
+    public int witchlevel;
+    public int tutorial;
     // Use this for initialization
     public monsterdata()
     {
@@ -30,5 +33,7 @@ public class monsterdata{
         bedprice = 1000;
         coinlevel = 0;
         moneycost = 100;
-    }
+        withcisthere = false;
+        witchlevel = 0;
+}
 }

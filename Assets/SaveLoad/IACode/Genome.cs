@@ -133,7 +133,7 @@ public class Genome : IComparable<Genome>
     {
         return genes;
     }
-    public void mutate( Pool pool, int[,] sightsense)
+    public void mutate( Pool pool, int[,] sightsense, int numberOfOutputs)
     {
         Hashtable aux = new Hashtable();
 
@@ -165,7 +165,7 @@ public class Genome : IComparable<Genome>
            // if (UnityEngine.Random.Range(0f, 1f) < i)
             if (randomNumber.NextDouble() < i)
             {
-                LinkMutates(false, sightsense.GetLength(0) * sightsense.GetLength(1) + 1, pool);
+                LinkMutates(false, sightsense.GetLength(0) * sightsense.GetLength(1) + 1, pool, numberOfOutputs);
             }
         }
 
@@ -174,7 +174,7 @@ public class Genome : IComparable<Genome>
             //if (UnityEngine.Random.Range(0f, 1f) < i)
             if (randomNumber.NextDouble() < i)
             {
-                LinkMutates(true, sightsense.GetLength(0) * sightsense.GetLength(1) + 1, pool);
+                LinkMutates(true, sightsense.GetLength(0) * sightsense.GetLength(1) + 1, pool, numberOfOutputs);
             }
         }
         for (float i = (float)mutationrates["node"]; i > 0; i--)
@@ -222,10 +222,10 @@ public class Genome : IComparable<Genome>
 
         }
     }
-    void LinkMutates(bool forceBias, int inputs, Pool pool)
+    void LinkMutates(bool forceBias, int inputs, Pool pool, int numberOfOutputs)
     {
-        int neuron1 = RandomNeurons(false, inputs);
-        int neuron2 = RandomNeurons(true, inputs);
+        int neuron1 = RandomNeurons(false, inputs, numberOfOutputs);
+        int neuron2 = RandomNeurons(true, inputs, numberOfOutputs);
 
         Genes newLink = new Genes(0,0,0.0f,true, 0);
         if (neuron1 <= inputs && neuron2 <= inputs)
@@ -271,10 +271,10 @@ public class Genome : IComparable<Genome>
         }
         return false;
     }
-    public int RandomNeurons(bool sentence, int inputs)
+    public int RandomNeurons(bool sentence, int inputs, int numberOfOutputs)
     {
 
-        bool[] neurons = new bool[1000000 + 3];
+        bool[] neurons = new bool[1000000 + numberOfOutputs];
         if (!sentence)
         {
             for (int i = 0; i < inputs; i++)
@@ -294,7 +294,7 @@ public class Genome : IComparable<Genome>
                 neurons[genes[i].getOut()] = true;
             }
         }
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < numberOfOutputs; i++)
         {
             neurons[1000000 + i] = true;
         }
@@ -371,7 +371,7 @@ public class Genome : IComparable<Genome>
             aux.setenabled(!aux.getenabled());
         }
     }
-    public void generateNetwork(int inputs)
+    public void generateNetwork(int inputs, int numberOutputs)
     {
         List<Neuron> Net = new List<Neuron>();
         //3 is always the number of Outputs for the moment, left, right and jump 
@@ -381,7 +381,8 @@ public class Genome : IComparable<Genome>
         }
         Neuron empty = null;
         Net.AddRange(Enumerable.Repeat(empty, 1000000- Net.Count));
-        for (int i = 0; i < 3; i++)
+        
+        for (int i = 0; i < numberOutputs; i++)
         {
             //max number of possible nodes
             Net.Add(new Neuron(new List<Genes>(), 0.0f));
@@ -469,7 +470,7 @@ public class Genome : IComparable<Genome>
         return 2.0f / (1.0f + Mathf.Exp(-4.9f * sum)) - 1.0f;
     }
 
-    public Genome crossover(Genome b, Pool pool, sightsense sightsense)
+    public Genome crossover(Genome b, Pool pool, sightsense sightsense, int numberOfOutputs)
     {
         Genome a = this;
         if (b.getDistanceTraveled() > a.distancetraveled)
@@ -479,7 +480,7 @@ public class Genome : IComparable<Genome>
             b = aux;
            
         }
-        Genome child = newGenome(pool, sightsense.thingsseen);
+        Genome child = newGenome(pool, sightsense.thingsseen, numberOfOutputs);
         List<Genes> innovations = new List<Genes>();
 
         Genes auxgene = null;
@@ -507,7 +508,7 @@ public class Genome : IComparable<Genome>
             if (GeneWild.getInnovation() < innovations.Count)
             {
                 Genes GeneWilder = innovations[GeneWild.getInnovation()];
-                if (GeneWilder != null && UnityEngine.Random.Range(1, 3) == 1 && GeneWilder.getenabled())
+                if (GeneWilder != null && randomNumber.Next(1, 3) == 1 && GeneWilder.getenabled())
                 {
                     child.getGenes().Add(GeneWilder.copyGene());
 
@@ -532,13 +533,13 @@ public class Genome : IComparable<Genome>
         }
         return child;
     }
-    Genome newGenome(Pool pool, int[,] sightsense)
+    Genome newGenome(Pool pool, int[,] sightsense, int numberOfOutputs)
     {
 
         Genome genome = new Genome(0, new List<Neuron>(), 0, 0, 0.25f, 2.0f, 0.4f, 0.5f, 0.2f, 0.4f, 0.1f, new List<Genes>());
         genome.setMaxNeuron(sightsense.GetLength(0) * sightsense.GetLength(1));
 
-        genome.mutate(pool, sightsense);
+        genome.mutate(pool, sightsense, numberOfOutputs);
 
         return genome;
     }

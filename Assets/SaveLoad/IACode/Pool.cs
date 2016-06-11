@@ -22,6 +22,7 @@ public class Pool
     [XmlArray("species")]
     [XmlArrayItem("specie")]
     public List<Species> species;
+
     public Pool(int Generation, int CurrentSpecies, int CurrentGenome, int CurrentFrame, int MaxFitness, int Innovation, List<Species> Species)
     {
         generation = Generation;
@@ -43,37 +44,57 @@ public class Pool
         innovation = 0;
         species = new List<Species>();
     }
-    public void newGeneration(sightsense sightsense)
+    public void newGeneration(sightsense sightsense, int numberOfOutputs)
     {
+        System.Random randomNumber = new System.Random();
 
         cullSpecies(false);
+        Debug.Log("cullspeciesfalse");
         rankGlobally();
+        Debug.Log("rankGlobally");
         removeStaleSpecies();
-        rankGlobally();
+        Debug.Log("removeStaleSpecies");
+       rankGlobally();
+        Debug.Log("rankglobally");
+
         for (int i = 0; i < species.Count; i++)
         {
             species[i].calculateAverageFitness();
         }
+        Debug.Log("averagefitness");
+
         removeWeakSpecies();
+        Debug.Log("removeweakspecies");
+
         int sum = totalAverageFitness();
-        List <Genome> children = new List<Genome>();
+        Debug.Log("totalaveragefitness");
+
+        List<Genome> children = new List<Genome>();
         for (int i = 0; i < species.Count; i++)
         {
             int breed = (int)Mathf.Floor((float) species[i].getAverageFitness() / (float) sum * 200.0f) - 1;
             for (int j = 0; j < breed; j++)
             {
-                children.Add(species[i].breedChild(this,sightsense));
+                children.Add(species[i].breedChild(this,sightsense, numberOfOutputs));
+                Debug.Log("breedchild");
+
             }
         }
         cullSpecies(true);
+        Debug.Log("cullspacies");
+
         while (children.Count + species.Count < 200)
         {
-            children.Add(species[Random.Range(0, species.Count)].breedChild(this, sightsense));
+            children.Add(species[randomNumber.Next(0, species.Count)].breedChild(this, sightsense, numberOfOutputs));
+            Debug.Log("breedchild");
+
         }
         for (int i = 0; i < children.Count; i++)
         {
             Genome child = children[i];
             addToSpecies(child);
+            Debug.Log("addtospecies");
+
         }
 
         generation++;
